@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="module" version="3.1.0" client="site" method="upgrade">
+    <name>Hello, World!</name>
+    <author>John Doe</author>
+    <version>1.0.0</version>
+    <description>Module to display a booking chart of events.</description>
+    <files>
+        <filename>mod_eventchart.xml</filename>
+        <filename module="mod_eventchart">mod_eventchart.php</filename>
+        <filename>index.html</filename>
+        <filename>helper.php</filename>
+        <filename>MIT licence.txt</filename>
+        <filename>tmpl/default.php</filename>
+        <filename>tmpl/index.html</filename>
+    </files>
+    <config>
+    </config>
+</extension>
