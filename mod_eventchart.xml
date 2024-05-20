@@ -2,7 +2,7 @@
 <extension type="module" version="3.1.0" client="site" method="upgrade">
     <name>Event booking - Display event chart</name>
     <author>Frans Stuurman</author>
-    <version>1.0.0</version>
+    <version>0.0.3</version>
     <description>Module to display a line chart of event bookings.</description>
     <files>
         <filename>mod_eventchart.xml</filename>
