@@ -26,11 +26,12 @@ echo '</script>';
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js">
 </script>
 
-<div id="chartFilters">
+<div id="fsECFilters">
     <h3>Filters</h3>
-    <input type="text" name="Event" value="" onchange="changeTitle(this.value)">
+    <label for="fsECname">Event name</label>
+    <input type="text" id="fsECname" oninput="changeTitle(this.value)">
 </div>
-<canvas id="myChart" width="800" height="600"></canvas>
+<canvas id="fsECchart" width="800" height="600"></canvas>
 <script>
 
     // function convertDates written by chatgpt
@@ -71,7 +72,7 @@ echo '</script>';
 
             if (chartData[event_id].event_date >= from && 
                 chartData[event_id].event_date <= to &&
-                (title === '' || chartData[event_id].title.includes(title))
+                (title === '' || chartData[event_id].title.toUpperCase().includes(title.toUpperCase()))
 //                (category.length == 0 || anyMatch(chartData[event_id].category, category))
                 ){
                 console.log("Filtered events: " + chartData[event_id].title);
@@ -111,7 +112,7 @@ echo '</script>';
 
 
     // create chart
-    var ctx = document.getElementById('myChart').getContext('2d');
+    var ctx = document.getElementById('fsECchart').getContext('2d');
     var chart = new Chart(ctx, {
         type: 'line',
         data: {
