@@ -66,16 +66,15 @@ echo '</script>';
     }
 
     // populate the chartjs datasets, from chartData, with filters
-    function loadData(chartData,datasets,from,to,title,category) {
+    function loadData(chartData, datasets, filter) {
         for (var event_id in chartData) {
-    //            console.log(chartData[event_id].title);
 
-            if (chartData[event_id].event_date >= from && 
-                chartData[event_id].event_date <= to &&
-                (title === '' || chartData[event_id].title.toUpperCase().includes(title.toUpperCase()))
-//                (category.length == 0 || anyMatch(chartData[event_id].category, category))
+            if (chartData[event_id].event_date >= filter.from && 
+                chartData[event_id].last_sale <= filter.range &&
+                (filter.title === '' || chartData[event_id].title.toUpperCase().includes(filter.title.toUpperCase()))
+//                (filter.category.length == 0 || anyMatch(chartData[event_id].category, filter.category))
                 ){
-                console.log("Filtered events: " + chartData[event_id].title);
+
                 datasets.push({
                     label: chartData[event_id].title,
                     order: 0-chartData[event_id].event_date,
@@ -93,23 +92,33 @@ echo '</script>';
     // convert PHP data to javascript data
     convertDates(chartData,['event_date','sale_date']);
 
+    // get last sale (in days before event)
+
+    for (var event_id in chartData){
+        var last_sale = 99999;
+        chartData[event_id].sales.forEach((sale) => {
+            if (sale.days_before_event < last_sale) last_sale = sale.days_before_event;
+        });
+        chartData[event_id].last_sale = last_sale;
+
+    }
+
     //  Calculate filters
-    pastFilter = 365;
-    rangeFilter = 30;
+    var filter = {};
+    filter.past = 365;
+    filter.range = 30;
     // include events in this date range
-    var fromDate = new Date(); fromDate.setDate(fromDate.getDate() - pastFilter);
-    var toDate = new Date(); toDate.setDate(toDate.getDate() + rangeFilter);
+    filter.from = new Date(); filter.from.setDate(filter.from.getDate() - filter.past);
+    filter.to = new Date(); filter.to.setDate(filter.to.getDate() + filter.range);
     // document.write(fromDate);
-    var titleFilter = 'Mezrab';
-    var categoryFilter = ['Bal'];
+    filter.title = 'Mezrab';
+    filter.category = ['Bal'];
+    console.log(JSON.stringify(filter));
 
 
     // load data into chart
     var datasets = [];
-    loadData(chartData, datasets, fromDate, toDate, titleFilter, categoryFilter);
-
-//        console.log(JSON.stringify(datasets));
-
+    loadData(chartData, datasets, filter);
 
     // create chart
     var ctx = document.getElementById('fsECchart').getContext('2d');
@@ -123,7 +132,7 @@ echo '</script>';
                 x: {
                     type: 'linear',
                     reverse: true,
-                    max: rangeFilter,
+                    max: filter.range,
                     position: 'bottom',
                     title: {
                         display: true,
@@ -146,9 +155,9 @@ echo '</script>';
     // titlefilter changed
     function changeTitle(newTitleFilter) {
         console.log("New title filter: " + newTitleFilter);
-        titleFilter = newTitleFilter;
+        filter.title = newTitleFilter
         datasets = [];
-        loadData(chartData, datasets, fromDate, toDate, titleFilter, categoryFilter);
+        loadData(chartData, datasets, filter);
         console.log("datasets: " + datasets.length);
         chart.data.datasets = datasets;
         chart.update();
