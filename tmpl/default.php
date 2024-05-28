@@ -12,12 +12,22 @@ echo '<script>';
 // all dates are unix timestamp in seconds
 //echo 'document.write(\'tot hier\');';
 echo 'var chartData = ' . json_encode($eventData) . ';';
+echo 'var locationData = ' . json_encode($locationData) . ';';
+//echo 'console.log(chartData);';
 //echo 'document.write("hier<br>");';
 // default filter items, from future module options 
 // echo 'var past = 365;'
 // echo 'var range = 30;'
 // echo 'var titleFilter = \'Mezrab\';'
 // echo 'var category = [\'Bal\'];'
+
+// TODO
+// Filter on location
+// Filter on category
+// Laatste sale doortrekken naar huidige datum, als evenement nog niet is geweest
+// Defaults for filters as component fields
+// Multi-lingual?
+
 
 
 echo '</script>';
@@ -30,6 +40,8 @@ echo '</script>';
     <h3>Filters</h3>
     <label for="fsECtitle">Event title</label>
     <input type="text" id="fsECtitle" oninput="changeTitle(this.value)">
+    <label for="fsECloc">Location</label>
+    <select id="fsECloc" oninput="changeLocation(this.value)"></select>
     <label for="fsECpast">Include past events</label>
     <select id="fsECpast" oninput="changePast(this.value)"></select>
     <label for="fsECrange">Horizontal range</label>
@@ -71,10 +83,12 @@ echo '</script>';
 
     // returns true if event is included in the chart
     function filterEvent(event, filter){
+        //console.log("filter locationID: " + filter.locationID);
         return(
             event.event_date >= filter.from && 
             event.last_sale <= filter.range &&
-            (filter.title === '' || event.title.toUpperCase().includes(filter.title.toUpperCase()))
+            (filter.title === '' || event.title.toUpperCase().includes(filter.title.toUpperCase())) &&
+            ((filter.locationID == -1) || (event.location_id == filter.locationID))
 //            (filter.category.length == 0 || anyMatch(chartData[event_id].category, filter.category))
         );
     }
@@ -125,7 +139,7 @@ echo '</script>';
     function updateChart(chart, chartData, datasets, filter) {
         datasets = [];
         loadData(chartData, datasets, filter);
-        console.log("datasets: " + datasets.length);
+        //console.log("datasets: " + datasets.length);
         chart.data.datasets = datasets;
         filter.first = firstSale(chartData, filter);
         chart.options.scales.x.max = Math.min(filter.range, filter.first);
@@ -163,7 +177,9 @@ echo '</script>';
     filter.from = new Date(); filter.from.setDate(filter.from.getDate() - filter.past);
     filter.to = new Date(); filter.to.setDate(filter.to.getDate() + filter.range);
     // document.write(fromDate);
-    filter.title = 'Mezrab';
+    filter.title = '';
+    filter.location = 'Mezrab';
+    filter.locationID = "-1"; // will be replaced, see below
     filter.category = ['Bal'];
     filter.first = firstSale(chartData, filter); // to calculate the maximum x range of the chart
 
@@ -178,6 +194,15 @@ echo '</script>';
     addOption(rangeDropdown,"4 months",123,false);
     addOption(rangeDropdown,"6 months",183,false);
     addOption(rangeDropdown,"all",99999,false); //Todo: bereken actuele maximum
+    
+    var locationDropdown = document.getElementById("fsECloc");
+    // todo: loop through available locations
+    addOption(locationDropdown,"All","-1",false);
+    for (var id in locationData){
+        //console.log("addOption: " + locationData[id].id + ' ' + locationData[id].name);
+        if (filter.location == locationData[id].name) filter.locationID = locationData[id].id;
+        addOption(locationDropdown,locationData[id].name,locationData[id].id,locationData[id].name == filter.location);
+    }
     var histDropdown = document.getElementById("fsECpast");
     addOption(histDropdown,"3 months",92,false);
     addOption(histDropdown,"6 months",183,false);
@@ -224,20 +249,32 @@ echo '</script>';
 
     // callback functions from the HTML filter fields/dropdowns
     function changeTitle(newTitleFilter) {
-        console.log("New title filter: " + newTitleFilter);
+    //    console.log("New title filter: " + newTitleFilter);
         filter.title = newTitleFilter;
         updateChart(chart, chartData, datasets, filter);
     }
 
+    function changeLocation(newLocationFilter) {
+        //console.log("New location filter: " + newLocationFilter);
+        filter.locationID = newLocationFilter;
+        if (newLocationFilter == -1) {
+            filter.location = "All";
+        } else {
+            filter.location = locationData.find((data) => data.id == newLocationFilter).name;
+        }
+        //console.log("Location: " + filter.location);
+        updateChart(chart, chartData, datasets, filter);
+    }
+
     function changePast(newPastFilter) {
-        console.log("New past filter: " + newPastFilter);
+    //    console.log("New past filter: " + newPastFilter);
         filter.past = newPastFilter;
         filter.from = new Date(); filter.from.setDate(filter.from.getDate() - filter.past);
         updateChart(chart, chartData, datasets, filter);
     }
 
     function changeRange(newRangeFilter) {
-        console.log("New range filter: " + newRangeFilter);
+    //    console.log("New range filter: " + newRangeFilter);
         filter.range = newRangeFilter;
         updateChart(chart, chartData, datasets, filter);
     }

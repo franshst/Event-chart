@@ -22,8 +22,8 @@ class ModEventChartHelper
         $db = Factory::getContainer()->get('DatabaseDriver');
         
         //construct field list
-        $fieldlist = $db->quoteName(['#__eb_events.id', '#__eb_events.title', 'event_date', 'event_capacity', '#__eb_locations.name', '#__eb_categories.name', '#__eb_registrants.id', '#__eb_registrants.register_date', '#__eb_registrants.number_registrants'],
-                                    ['event_id'       , null                , null        , null            , 'location'            , 'category'             , 'registrant_id'       , 'sale_date'                      , 'tickets_sold']);
+        $fieldlist = $db->quoteName(['#__eb_events.id', '#__eb_events.title', 'event_date', 'event_capacity', '#__eb_events.location_id', '#__eb_registrants.id', '#__eb_registrants.register_date', '#__eb_registrants.number_registrants'],
+                                    ['event_id'       , null                , null        , null            , null                      , 'registrant_id'       , 'sale_date'                      , 'tickets_sold']);
         //$fieldlist[0] = 'distinct ' . $fieldlist[0];
         
         // Retrieve the data
@@ -31,17 +31,19 @@ class ModEventChartHelper
         $query = $db->getQuery(true)
                     ->select($fieldlist)
                     ->from($db->quoteName('#__eb_events'))
-                    ->innerJoin($db->quoteName('#__eb_event_categories'), $db->quoteName('#__eb_events.id')          . '=' . $db->quoteName('#__eb_event_categories.event_id'))
-                    ->innerJoin($db->quoteName('#__eb_categories')      , $db->quoteName('#__eb_categories.id')      . '=' . $db->quoteName('#__eb_event_categories.category_id'))
+//                    ->innerJoin($db->quoteName('#__eb_event_categories'), $db->quoteName('#__eb_events.id')          . '=' . $db->quoteName('#__eb_event_categories.event_id'))
+//                    ->innerJoin($db->quoteName('#__eb_categories')      , $db->quoteName('#__eb_categories.id')      . '=' . $db->quoteName('#__eb_event_categories.category_id'))
                     ->innerJoin($db->quoteName('#__eb_locations')       , $db->quoteName('#__eb_events.location_id') . '=' . $db->quoteName('#__eb_locations.id'))
                     ->innerJoin($db->quoteName('#__eb_registrants')     , $db->quoteName('#__eb_events.id')          . '=' . $db->quoteName('#__eb_registrants.event_id'))
+                    ->where($db->quoteName('#__eb_events.published')      . '= 1')
                     ->where($db->quoteName('#__eb_registrants.published')      . '= 1')
                     ->where($db->quoteName('#__eb_registrants.payment_status') . '= 1')
                     //->where($db->quoteName('#__eb_events.id')                  . '= 14')
-                    ->where($db->quotename('#__eb_categories.name')            . '= :category'); //todo: proper filter on category
+                    //->where($db->quotename('#__eb_categories.name')            . '= :category'); //todo: proper filter on category
+                    ->order($db->quoteName(['#__eb_events.id','#__eb_registrants.register_date']));
         
-        $categoryFilter = 'Bal';        
-        $query->bind(':category', $categoryFilter);
+        //$categoryFilter = 'Bal';        
+        //$query->bind(':category', $categoryFilter);
         //dump(str_replace('#__','jml_',$query->__toString()));
         //return($query->__toString());
         // Prepare the query
@@ -64,7 +66,7 @@ class ModEventChartHelper
                 'event_date' => $event_date,
                 //'title' => iso8859_1_to_utf8($row['title']),
                 'title'=> $row['title'],
-                'location' => $row['location'],
+                'location_id' => $row['location_id'],
                 'event_capacity' => $row['event_capacity'],
                 'sales' => array());
             }
@@ -86,6 +88,18 @@ class ModEventChartHelper
         //dump($cumulativeData);
         return($cumulativeData);
 
+    }
+
+    public static function getLocationData($params) {
+        $db = Factory::getContainer()->get('DatabaseDriver');
+        $query = $db->getQuery(true)
+            ->select($db->quoteName(['id','name']))
+            ->from($db->quoteName('#__eb_locations'));
+        //dump($query->__toString());
+        $db->setQuery($query);
+        $locationData = $db->loadAssocList();
+        //dump($locationData);
+        return($locationData);
     }
 
     // Helper functions
