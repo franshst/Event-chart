@@ -13,4 +13,5 @@ require_once dirname(__FILE__) . '/helper.php';
 
 $eventData = modEventChartHelper::getEventData($params);
 $locationData = modEventChartHelper::getLocationData($params);
+$categoryData = modEventChartHelper::getCategoryData($params);
 require JModuleHelper::getLayoutPath('mod_eventchart');

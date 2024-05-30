@@ -2,7 +2,7 @@
 // Copyright Frans Stuurman 2024, MIT licence
 
 /* task of this file
-    Display data
+    Display a chart of sales
 */
 
 // No direct access
@@ -13,17 +13,16 @@ echo '<script>';
 //echo 'document.write(\'tot hier\');';
 echo 'var chartData = ' . json_encode($eventData) . ';';
 echo 'var locationData = ' . json_encode($locationData) . ';';
-//echo 'console.log(chartData);';
-//echo 'document.write("hier<br>");';
-// default filter items, from future module options 
+echo 'var categoryData = ' . json_encode($categoryData) . ';';
+//echo 'console.log(categoryData);';
+//echo 'document.write(categoryData);';
+// default filter items, from future module options
 // echo 'var past = 365;'
 // echo 'var range = 30;'
 // echo 'var titleFilter = \'Mezrab\';'
 // echo 'var category = [\'Bal\'];'
 
 // TODO
-// Filter on location
-// Filter on category
 // Laatste sale doortrekken naar huidige datum, als evenement nog niet is geweest
 // Defaults for filters as component fields
 // Multi-lingual?
@@ -41,7 +40,9 @@ echo '</script>';
     <label for="fsECtitle">Event title</label>
     <input type="text" id="fsECtitle" oninput="changeTitle(this.value)">
     <label for="fsECloc">Location</label>
-    <select id="fsECloc" oninput="changeLocation(this.value)"></select>
+    <select id="fsECloc" oninput="changeLocation(this.value)" maxwidth: 20em></select>
+    <label for="fsECcat">Category</label>
+    <select id="fsECcat" oninput="changeCategory(this.value)" maxwidth: 20em></select>
     <label for="fsECpast">Include past events</label>
     <select id="fsECpast" oninput="changePast(this.value)"></select>
     <label for="fsECrange">Horizontal range</label>
@@ -70,14 +71,16 @@ echo '</script>';
 
     // matches true, if any member in an array is equal to any member in other array
     function anyMatch(array1,array2) {
+        console.log('match ' + JSON.stringify(array1) + ' ' + JSON.stringify(array2));
         var match = false;
-        main: for(var element1 in array1) {
-            for (var element2 in array2) {
-                if (element1 === element2) {
+        main: for(var element1 of array1) {
+            for (var element2 of array2) {
+                if (element1 == element2) {
                     match = true; break main;
                 }
             }
         }
+        console.log('match result: ' + match);
         return match;
     }
 
@@ -85,11 +88,12 @@ echo '</script>';
     function filterEvent(event, filter){
         //console.log("filter locationID: " + filter.locationID);
         return(
-            event.event_date >= filter.from && 
+            event.event_date >= filter.from &&
             event.last_sale <= filter.range &&
             (filter.title === '' || event.title.toUpperCase().includes(filter.title.toUpperCase())) &&
-            ((filter.locationID == -1) || (event.location_id == filter.locationID))
-//            (filter.category.length == 0 || anyMatch(chartData[event_id].category, filter.category))
+            ((filter.locationID == -1) || (event.location_id == filter.locationID)) &&
+//            ((filter.categoryIdList == []) || filter.categoryIdList.includes(event.category_id))
+            (filter.categoryIdList.length == 0 || anyMatch(event.categoryIdList, filter.categoryIdList))
         );
     }
 
@@ -160,15 +164,7 @@ echo '</script>';
 
     // add the last sale
     insertLastSaleByEvent(chartData);
-/*
-    for (var event_id in chartData){
-        var last_sale = 99999;
-        chartData[event_id].sales.forEach((sale) => {
-            if (sale.days_before_event < last_sale) last_sale = sale.days_before_event;
-        });
-        chartData[event_id].last_sale = last_sale;
-    }
-*/
+
     //  Calculate filters
     var filter = {};
     filter.past = 365;
@@ -180,7 +176,8 @@ echo '</script>';
     filter.title = '';
     filter.location = 'Mezrab';
     filter.locationID = "-1"; // will be replaced, see below
-    filter.category = ['Bal'];
+    filter.category = 'Hoofdpagina - Bal';
+    filter.categoryIdList = []; // will be replaced
     filter.first = firstSale(chartData, filter); // to calculate the maximum x range of the chart
 
     // populate filter fields in html
@@ -196,13 +193,23 @@ echo '</script>';
     addOption(rangeDropdown,"all",99999,false); //Todo: bereken actuele maximum
     
     var locationDropdown = document.getElementById("fsECloc");
-    // todo: loop through available locations
     addOption(locationDropdown,"All","-1",false);
     for (var id in locationData){
         //console.log("addOption: " + locationData[id].id + ' ' + locationData[id].name);
-        if (filter.location == locationData[id].name) filter.locationID = locationData[id].id;
+        if (filter.location == locationData[id].name)
+            filter.locationID = locationData[id].id;
         addOption(locationDropdown,locationData[id].name,locationData[id].id,locationData[id].name == filter.location);
     }
+
+    var categoryDropdown = document.getElementById("fsECcat");
+    addOption(categoryDropdown,"All","-1",false);
+    for (var id in categoryData) {
+        console.log("addOption: " + categoryData[id].id + ' ' + categoryData[id].fullName);
+        addOption(categoryDropdown,categoryData[id].abbrName,categoryData[id].id,categoryData[id].fullName == filter.category)
+        if (categoryData[id].fullName == filter.category)
+            filter.categoryIdList = categoryData[id].idList;
+    }
+
     var histDropdown = document.getElementById("fsECpast");
     addOption(histDropdown,"3 months",92,false);
     addOption(histDropdown,"6 months",183,false);
@@ -248,34 +255,49 @@ echo '</script>';
     });
 
     // callback functions from the HTML filter fields/dropdowns
-    function changeTitle(newTitleFilter) {
-    //    console.log("New title filter: " + newTitleFilter);
-        filter.title = newTitleFilter;
+    function changeTitle(newFilter) {
+    //    console.log("New title filter: " + newFilter);
+        filter.title = newFilter;
         updateChart(chart, chartData, datasets, filter);
     }
 
-    function changeLocation(newLocationFilter) {
-        //console.log("New location filter: " + newLocationFilter);
-        filter.locationID = newLocationFilter;
-        if (newLocationFilter == -1) {
+    function changeLocation(newFilter) {
+        //console.log("New location filter: " + newFilter);
+        filter.locationID = newFilter;
+        if (newFilter == -1) {
             filter.location = "All";
         } else {
-            filter.location = locationData.find((data) => data.id == newLocationFilter).name;
+            filter.location = locationData.find((data) => data.id == newFilter).name;
         }
         //console.log("Location: " + filter.location);
         updateChart(chart, chartData, datasets, filter);
     }
 
-    function changePast(newPastFilter) {
-    //    console.log("New past filter: " + newPastFilter);
-        filter.past = newPastFilter;
+    function changeCategory(newFilter) {
+        console.log("New category filter: " + newFilter);
+
+        filter.categoryIdList = newFilter;
+        if (newFilter == -1) {
+            filter.category = "All";
+            filter.categoryIdList = [];
+        } else {
+            filter.category = categoryData.find((data) => data.id == newFilter).fullName;
+            filter.categoryIdList = categoryData.find((data) => data.id == newFilter).idList;
+        }
+        console.log("Category: " + filter.category + " " + JSON.stringify(filter.categoryIdList));
+        updateChart(chart, chartData, datasets, filter);
+    }
+
+    function changePast(newFilter) {
+    //    console.log("New past filter: " + newFilter);
+        filter.past = newFilter;
         filter.from = new Date(); filter.from.setDate(filter.from.getDate() - filter.past);
         updateChart(chart, chartData, datasets, filter);
     }
 
-    function changeRange(newRangeFilter) {
-    //    console.log("New range filter: " + newRangeFilter);
-        filter.range = newRangeFilter;
+    function changeRange(newFilter) {
+    //    console.log("New range filter: " + newFilter);
+        filter.range = newFilter;
         updateChart(chart, chartData, datasets, filter);
     }
 </script>
