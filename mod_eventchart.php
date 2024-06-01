@@ -1,6 +1,13 @@
 <?php
 
-// Copyright Frans Stuurman 2024, MIT licence
+/**
+ * @package    Event Chart
+ *
+ * @author     Frans Stuurman
+ * @copyright  Frans Stuurman
+ * @license    MIT see LICENSE
+ * @link
+ */
 
 /* task of this file
     Main driver of Event Chart module

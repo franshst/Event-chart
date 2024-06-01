@@ -8,8 +8,6 @@
     <files>
         <filename>mod_eventchart.xml</filename>
         <filename module="mod_eventchart">mod_eventchart.php</filename>
-        <filename>index.html</filename>
-        <filename>LICENSE</filename>
         <folder>tmpl</folder>
         <folder>Helper</folder>
     </files>

@@ -1,5 +1,12 @@
 <?php
-// Copyright Frans Stuurman 2024, MIT licence
+/**
+ * @package    Event Chart
+ *
+ * @author     Frans Stuurman
+ * @copyright  Frans Stuurman
+ * @license    MIT see LICENSE
+ * @link
+ */
 
 /* task of this file
     Fetch event data from database
@@ -35,7 +42,6 @@ class EventChartHelper
                 $eventData[$event_id] = array(
                 'event_id' => $row['event_id'],
                 'event_date' => $event_date,
-                //'title' => iso8859_1_to_utf8($row['title']),
                 'title'=> $row['title'],
                 'location_id' => $row['location_id'],
                 'categoryIdList' => $categories[$event_id], // here insert the list of categories
@@ -203,21 +209,6 @@ class EventChartHelper
      *
      * @access private
      */
-
-    private function iso8859_1_to_utf8(string $s): string {
-        $s .= $s;
-        $len = \strlen($s);
-
-        for ($i = $len >> 1, $j = 0; $i < $len; ++$i, ++$j) {
-            switch (true) {
-                case $s[$i] < "\x80": $s[$j] = $s[$i]; break;
-                case $s[$i] < "\xC0": $s[$j] = "\xC2"; $s[++$j] = $s[$i]; break;
-                default: $s[$j] = "\xC3"; $s[++$j] = \chr(\ord($s[$i]) - 64); break;
-            }
-        }
-
-        return substr($s, 0, $j);
-    }
 
     // testing only, dump vars on html
     private function dump($data) {
