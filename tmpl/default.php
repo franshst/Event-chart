@@ -14,8 +14,6 @@ echo '<script>';
 echo 'var chartData = ' . json_encode($eventData) . ';';
 echo 'var locationData = ' . json_encode($locationData) . ';';
 echo 'var categoryData = ' . json_encode($categoryData) . ';';
-//echo 'console.log(categoryData);';
-//echo 'document.write(categoryData);';
 // default filter items, from future module options
 // echo 'var past = 365;'
 // echo 'var range = 30;'
@@ -23,7 +21,6 @@ echo 'var categoryData = ' . json_encode($categoryData) . ';';
 // echo 'var category = [\'Bal\'];'
 
 // TODO
-// Laatste sale doortrekken naar huidige datum, als evenement nog niet is geweest
 // Defaults for filters as component fields
 // Multi-lingual?
 
@@ -31,9 +28,6 @@ echo 'var categoryData = ' . json_encode($categoryData) . ';';
 
 echo '</script>';
 ?>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js">
-</script>
 
 <div id="fsECFilters">
     <h3>Filters</h3>
@@ -49,7 +43,9 @@ echo '</script>';
     <select id="fsECrange" oninput="changeRange(this.value)"></select>
 </div>
 <canvas id="fsECchart" width="800" height="600"></canvas>
-<script>
+<script type = "module">
+    import {Chart, LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Legend, Tooltip} from 'https://cdn.skypack.dev/chart.js';
+    Chart.register(LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Legend, Tooltip);
 
     // function convertDates written by chatgpt
     // conversion of PHP datetime values to javascript datetime values
@@ -71,7 +67,6 @@ echo '</script>';
 
     // matches true, if any member in an array is equal to any member in other array
     function anyMatch(array1,array2) {
-        console.log('match ' + JSON.stringify(array1) + ' ' + JSON.stringify(array2));
         var match = false;
         main: for(var element1 of array1) {
             for (var element2 of array2) {
@@ -80,19 +75,16 @@ echo '</script>';
                 }
             }
         }
-        console.log('match result: ' + match);
         return match;
     }
 
     // returns true if event is included in the chart
     function filterEvent(event, filter){
-        //console.log("filter locationID: " + filter.locationID);
         return(
             event.event_date >= filter.from &&
             event.last_sale <= filter.range &&
             (filter.title === '' || event.title.toUpperCase().includes(filter.title.toUpperCase())) &&
             ((filter.locationID == -1) || (event.location_id == filter.locationID)) &&
-//            ((filter.categoryIdList == []) || filter.categoryIdList.includes(event.category_id))
             (filter.categoryIdList.length == 0 || anyMatch(event.categoryIdList, filter.categoryIdList))
         );
     }
@@ -100,7 +92,7 @@ echo '</script>';
     // returns how many days ago the first sale was of every filtered event (relative to event date)
     // used to calculate the range of the chart.
     function firstSale(chartData, filter) {
-        first = 7; // minimum range is 7 days
+        let first = 7; // minimum range is 7 days
         for (var event_id in chartData) {
             if (filterEvent(chartData[event_id],filter)) {
                 chartData[event_id].sales.forEach((sale) => {
@@ -112,13 +104,31 @@ echo '</script>';
     }
 
     // populate chartData with last_sale of each event.
+    // hmm, this should be moved to php while processing the data from the db
     function insertLastSaleByEvent(chartData) {
         for (var event_id in chartData){
-            var last_sale = 99999;
+            var lastSale = 99999; //infinitely in the past
+            var lastSaleDate = new Date(-8640000000000000); //on the minimum date
+            var totalTicketsSold = 0; //a sale of 0
             chartData[event_id].sales.forEach((sale) => {
-                if (sale.days_before_event < last_sale) last_sale = sale.days_before_event;
+                if (sale.days_before_event < lastSale) {
+                    lastSale = sale.days_before_event;
+                    lastSaleDate = sale.sale_date;
+                    totalTicketsSold = sale.cum_tickets_sold;
+                }
             });
-            chartData[event_id].last_sale = last_sale;
+            chartData[event_id].last_sale = lastSale;
+
+            if ((lastSale != 99999) && (lastSaleDate < chartData[event_id].event_date)) { // if any sales and if last sale is before the event date
+                // place an extra datapoint
+                let today = new Date();
+                if (today > chartData[event_id].event_date) { // event has passed, place it on event_date
+                    chartData[event_id].sales.push({days_before_event:0,tickets_sold:0,cum_tickets_sold:totalTicketsSold,pointStyle: 'crossRot'});
+                } else { // event in future, place it on today
+                    const diffDates = (chartData[event_id].event_date - today)/(1000 * 60 * 60 * 24);
+                    chartData[event_id].sales.push({days_before_event:diffDates,tickets_sold:0,cum_tickets_sold:totalTicketsSold,pointStyle: 'crossRot'});
+                }
+            }
         }
     }
 
@@ -129,12 +139,17 @@ echo '</script>';
                 datasets.push({
                     label: chartData[event_id].title,
                     order: 0-chartData[event_id].event_date,
-                    data: chartData[event_id].sales.map((row) => ({
-                        x: row.days_before_event,
-                        y: row.cum_tickets_sold
-                    })),
+                    data: chartData[event_id].sales.map((row) => (
+                        {
+                            x: row.days_before_event,
+                            y: row.cum_tickets_sold,
+                            pointStyle: row.pointStyle || 'circle'
+                        }
+                        )),
                     borderColor: '#' + Math.floor(Math.random()*16777215).toString(16), // Random color
-                    fill: false
+                    fill: false,
+                    showLine: true, // Ensures lines are drawn between points
+                    pointStyle: 'circle' // Default point style for the dataset
                 });
             }
         }
@@ -143,7 +158,6 @@ echo '</script>';
     function updateChart(chart, chartData, datasets, filter) {
         datasets = [];
         loadData(chartData, datasets, filter);
-        //console.log("datasets: " + datasets.length);
         chart.data.datasets = datasets;
         filter.first = firstSale(chartData, filter);
         chart.options.scales.x.max = Math.min(filter.range, filter.first);
@@ -195,7 +209,6 @@ echo '</script>';
     var locationDropdown = document.getElementById("fsECloc");
     addOption(locationDropdown,"All","-1",false);
     for (var id in locationData){
-        //console.log("addOption: " + locationData[id].id + ' ' + locationData[id].name);
         if (filter.location == locationData[id].name)
             filter.locationID = locationData[id].id;
         addOption(locationDropdown,locationData[id].name,locationData[id].id,locationData[id].name == filter.location);
@@ -204,7 +217,6 @@ echo '</script>';
     var categoryDropdown = document.getElementById("fsECcat");
     addOption(categoryDropdown,"All","-1",false);
     for (var id in categoryData) {
-        console.log("addOption: " + categoryData[id].id + ' ' + categoryData[id].fullName);
         addOption(categoryDropdown,categoryData[id].abbrName,categoryData[id].id,categoryData[id].fullName == filter.category)
         if (categoryData[id].fullName == filter.category)
             filter.categoryIdList = categoryData[id].idList;
@@ -250,32 +262,33 @@ echo '</script>';
                         text: 'Tickets sold'
                     }
                 }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
             }
         }
     });
 
     // callback functions from the HTML filter fields/dropdowns
-    function changeTitle(newFilter) {
-    //    console.log("New title filter: " + newFilter);
+    window.changeTitle = function(newFilter) {
         filter.title = newFilter;
         updateChart(chart, chartData, datasets, filter);
     }
 
-    function changeLocation(newFilter) {
-        //console.log("New location filter: " + newFilter);
+    window.changeLocation = function(newFilter) {
         filter.locationID = newFilter;
         if (newFilter == -1) {
             filter.location = "All";
         } else {
             filter.location = locationData.find((data) => data.id == newFilter).name;
         }
-        //console.log("Location: " + filter.location);
         updateChart(chart, chartData, datasets, filter);
     }
 
-    function changeCategory(newFilter) {
-        console.log("New category filter: " + newFilter);
-
+    window.changeCategory = function(newFilter) {
         filter.categoryIdList = newFilter;
         if (newFilter == -1) {
             filter.category = "All";
@@ -284,19 +297,16 @@ echo '</script>';
             filter.category = categoryData.find((data) => data.id == newFilter).fullName;
             filter.categoryIdList = categoryData.find((data) => data.id == newFilter).idList;
         }
-        console.log("Category: " + filter.category + " " + JSON.stringify(filter.categoryIdList));
         updateChart(chart, chartData, datasets, filter);
     }
 
-    function changePast(newFilter) {
-    //    console.log("New past filter: " + newFilter);
+    window.changePast = function(newFilter) {
         filter.past = newFilter;
         filter.from = new Date(); filter.from.setDate(filter.from.getDate() - filter.past);
         updateChart(chart, chartData, datasets, filter);
     }
 
-    function changeRange(newFilter) {
-    //    console.log("New range filter: " + newFilter);
+    window.changeRange = function(newFilter) {
         filter.range = newFilter;
         updateChart(chart, chartData, datasets, filter);
     }
