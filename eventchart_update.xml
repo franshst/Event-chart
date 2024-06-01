@@ -1,0 +1,16 @@
+<updates>
+    <update>
+        <name>Foo</name>
+        <description>Module to display a line chart of event bookings.</description>
+        <element>mod_eventchart</element>
+        <type>module</type>
+        <version>0.0.5 RC</version>
+        <downloads>
+            <downloadurl type="full" format="zip">https://github.com/franshst/Event-chart/releases/download/pre-release/mod_eventchart.zip</downloadurl>
+        </downloads>
+        <maintainer>Frans Stuurman</maintainer>
+        <maintainerurl>http://www.example.com</maintainerurl>
+        <targetplatform name="joomla" version="4.0"/>
+        <client>site</client>
+    </update>
+</updates>
