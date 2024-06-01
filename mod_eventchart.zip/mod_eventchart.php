@@ -8,10 +8,12 @@
 
 // No direct access
 defined('_JEXEC') or die;
-// Include the syndicate functions only once
-require_once dirname(__FILE__) . '/helper.php';
 
-$eventData = modEventChartHelper::getEventData($params);
-$locationData = modEventChartHelper::getLocationData($params);
-$categoryData = modEventChartHelper::getCategoryData($params);
-require JModuleHelper::getLayoutPath('mod_eventchart');
+use Joomla\CMS\Helper\ModuleHelper;
+use EventChartNamespace\Module\EventChart\Site\Helper\EventChartHelper;
+
+$eventData = EventChartHelper::getEventData();
+$locationData = EventChartHelper::getLocationData();
+$categoryData = EventChartHelper::getCategoryData();
+
+require ModuleHelper::getLayoutPath('mod_eventchart', $params->get('layout', 'default'));

@@ -2,16 +2,16 @@
 <extension type="module" version="3.1.0" client="site" method="upgrade">
     <name>Event booking - Display event chart</name>
     <author>Frans Stuurman</author>
-    <version>0.0.4 RC</version>
+    <version>0.0.5 RC</version>
     <description>Module to display a line chart of event bookings.</description>
+    <namespace>EventChartNamespace\Module\EventChart</namespace>
     <files>
         <filename>mod_eventchart.xml</filename>
         <filename module="mod_eventchart">mod_eventchart.php</filename>
         <filename>index.html</filename>
-        <filename>helper.php</filename>
         <filename>LICENSE</filename>
-        <filename>tmpl/default.php</filename>
-        <filename>tmpl/index.html</filename>
+        <folder>tmpl</folder>
+        <folder>Helper</folder>
     </files>
     <config>
     </config>

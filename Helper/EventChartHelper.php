@@ -5,8 +5,12 @@
     Fetch event data from database
 */
 
+namespace EventChartNamespace\Module\EventChart\Site\Helper;
+
+defined('_JEXEC') or die;
+
 use Joomla\CMS\Factory;
-class ModEventChartHelper
+class EventChartHelper
 {
     /**
      * Retrieves eventdata from the database
