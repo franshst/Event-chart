@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<extension type="module" version="3.1.0" client="site" method="upgrade">
-    <name>Event booking - Display event chart</name>
+<extension type="module" client="site" method="upgrade">
+    <name>mod_eventchart</name>
     <author>Frans Stuurman</author>
-    <version>0.0.11 RC</version>
+    <copyright>(c) Frans Stuurman 2024</copyright>
+    <licence>MIT</licence>
+    <version>0.0.13</version>
     <description>Module to display a line chart of event bookings.</description>
     <updateservers>
         <server type="extension" priority="1" name="Eventchart">https://github.com/franshst/Event-chart/releases/latest/download/eventchart_update.xml</server>
