@@ -22,7 +22,7 @@ Copy-Item -Path "Helper" -Destination "$tempFolder\Helper" -Recurse
 Copy-Item -Path "LICENSE" -Destination $tempFolder
 Copy-Item -Path "*.html" -Destination $tempFolder
 Copy-Item -Path "*.php" -Destination $tempFolder
-Copy-Item -Path "*.xml" -Destination $tempFolder
+Copy-Item -Path "mod_eventchart.xml" -Destination $tempFolder
 
 # Create the ZIP file from the temporary folder
 Compress-Archive -Path "$tempFolder\*" -DestinationPath $zipFile

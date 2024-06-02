@@ -38,16 +38,16 @@ echo '</script>';
 
 <div id="fsECFilters">
     <h3>Filters</h3>
-    <label for="fsECtitle">Event title</label>
-    <input type="text" id="fsECtitle" oninput="changeTitle(this.value)">
-    <label for="fsECloc">Location</label>
-    <select id="fsECloc" oninput="changeLocation(this.value)" maxwidth: 20em></select>
-    <label for="fsECcat">Category</label>
-    <select id="fsECcat" oninput="changeCategory(this.value)" maxwidth: 20em></select>
-    <label for="fsECpast">Include past events</label>
-    <select id="fsECpast" oninput="changePast(this.value)"></select>
-    <label for="fsECrange">Horizontal range</label>
-    <select id="fsECrange" oninput="changeRange(this.value)"></select>
+    <!--label for="fsECtitle">Event title</label -->
+    <input type="text" id="fsECtitle" placeholder="Filter event title" oninput="changeTitle(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></input>
+    <!-- label for="fsECloc">Location</label -->
+    <select id="fsECloc" oninput="changeLocation(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></select>
+    <!-- label for="fsECcat">Category</label -->
+    <select id="fsECcat" oninput="changeCategory(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></select>
+    <!-- label for="fsECpast">Include past events</label -->
+    <select id="fsECpast" oninput="changePast(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></select>
+    <!-- label for="fsECrange">Horizontal range</label -->
+    <select id="fsECrange" oninput="changeRange(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></select>
 </div>
 <canvas id="fsECchart" width="800" height="600"></canvas>
 <script type = "module">
@@ -188,6 +188,11 @@ echo '</script>';
 
     //  Calculate filters
     var filter = {};
+    filter.locationAll = "-- Filter location --";
+    filter.categoryAll = "-- Filter category --";
+    filter.rangeAll = "-- Display horizontal range --";
+    filter.histAll = "-- Include past events --";
+
     filter.past = 365;
     filter.range = 31;
     // include events in this date range
@@ -204,6 +209,7 @@ echo '</script>';
     // populate filter fields in html
     document.getElementById("fsECtitle").value = filter.title;
     var rangeDropdown = document.getElementById("fsECrange");
+    addOption(rangeDropdown,filter.rangeAll,99999,false);
     addOption(rangeDropdown,"1 week",7,false);
     addOption(rangeDropdown,"2 weeks",14,false);
     addOption(rangeDropdown,"1 month",31,true);  // default
@@ -211,10 +217,10 @@ echo '</script>';
     addOption(rangeDropdown,"3 months",92,false);
     addOption(rangeDropdown,"4 months",123,false);
     addOption(rangeDropdown,"6 months",183,false);
-    addOption(rangeDropdown,"all",99999,false); //Todo: bereken actuele maximum
+
     
     var locationDropdown = document.getElementById("fsECloc");
-    addOption(locationDropdown,"All","-1",false);
+    addOption(locationDropdown,filter.locationAll,"-1",false);
     for (var id in locationData){
         if (filter.location == locationData[id].name)
             filter.locationID = locationData[id].id;
@@ -222,7 +228,7 @@ echo '</script>';
     }
 
     var categoryDropdown = document.getElementById("fsECcat");
-    addOption(categoryDropdown,"All","-1",false);
+    addOption(categoryDropdown,filter.categoryAll,"-1",false);
     for (var id in categoryData) {
         addOption(categoryDropdown,categoryData[id].abbrName,categoryData[id].id,categoryData[id].fullName == filter.category)
         if (categoryData[id].fullName == filter.category)
@@ -230,11 +236,11 @@ echo '</script>';
     }
 
     var histDropdown = document.getElementById("fsECpast");
+    addOption(histDropdown,filter.histAll,99999,false);
     addOption(histDropdown,"3 months",92,false);
     addOption(histDropdown,"6 months",183,false);
     addOption(histDropdown,"1 year",365,true); // default
     addOption(histDropdown,"2 years",730,false);
-    addOption(histDropdown,"all",99999,false);
 
 
     // load data into chart
@@ -287,29 +293,30 @@ echo '</script>';
 
     window.changeLocation = function(newFilter) {
         filter.locationID = newFilter;
-        if (newFilter == -1) {
-            filter.location = "All";
+/*        if (newFilter == -1) {
+            filter.location = filter.locationAll;
         } else {
             filter.location = locationData.find((data) => data.id == newFilter).name;
         }
+*/
         updateChart(chart, chartData, datasets, filter);
     }
 
     window.changeCategory = function(newFilter) {
         filter.categoryIdList = newFilter;
         if (newFilter == -1) {
-            filter.category = "All";
+/*            filter.category = filter.categoryAll;*/
             filter.categoryIdList = [];
         } else {
-            filter.category = categoryData.find((data) => data.id == newFilter).fullName;
+ /*           filter.category = categoryData.find((data) => data.id == newFilter).fullName; */
             filter.categoryIdList = categoryData.find((data) => data.id == newFilter).idList;
         }
         updateChart(chart, chartData, datasets, filter);
     }
 
     window.changePast = function(newFilter) {
-        filter.past = newFilter;
-        filter.from = new Date(); filter.from.setDate(filter.from.getDate() - filter.past);
+/*        filter.past = newFilter;*/
+        filter.from = new Date(); filter.from.setDate(filter.from.getDate() - newFilter);
         updateChart(chart, chartData, datasets, filter);
     }
 
