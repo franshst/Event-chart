@@ -37,17 +37,25 @@ echo '</script>';
 ?>
 
 <div id="fsECFilters">
-    <h3>Filters</h3>
-    <!--label for="fsECtitle">Event title</label -->
-    <input type="text" id="fsECtitle" placeholder="Filter event title" oninput="changeTitle(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></input>
-    <!-- label for="fsECloc">Location</label -->
-    <select id="fsECloc" oninput="changeLocation(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></select>
-    <!-- label for="fsECcat">Category</label -->
-    <select id="fsECcat" oninput="changeCategory(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></select>
-    <!-- label for="fsECpast">Include past events</label -->
-    <select id="fsECpast" oninput="changePast(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></select>
-    <!-- label for="fsECrange">Horizontal range</label -->
-    <select id="fsECrange" oninput="changeRange(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></select>
+    <div class="form-group form-row">
+        <div class="col-auto">
+            <input type="text" id="fsECtitle" placeholder="Filter event title" class="form-control form-control-sm col-sm-2" oninput="changeTitle(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></input>
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-auto">
+            <select id="fsECloc" class="form-select form-select-sm col-sm-2" oninput="changeLocation(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></select>
+        </div>
+        <div class="col-auto">
+            <select id="fsECcat" class="form-select form-select-sm col-sm-2" oninput="changeCategory(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></select>
+        </div>
+        <div class="col-auto">
+            <select id="fsECpast" class="form-select form-select-sm mcol-sm-2" oninput="changePast(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></select>
+        </div>
+        <div class="col-auto">
+            <select id="fsECrange" class="form-select form-select-sm col-sm-2" oninput="changeRange(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></select>
+        </div>
+    </div>
 </div>
 <canvas id="fsECchart" width="800" height="600"></canvas>
 <script type = "module">
@@ -130,10 +138,12 @@ echo '</script>';
                 // place an extra datapoint
                 let today = new Date();
                 if (today > chartData[event_id].event_date) { // event has passed, place it on event_date
-                    chartData[event_id].sales.push({days_before_event:0,tickets_sold:0,cum_tickets_sold:totalTicketsSold,pointStyle: 'crossRot'});
+                    chartData[event_id].sales.push({days_before_event:0,tickets_sold:0,cum_tickets_sold:totalTicketsSold});
+                    chartData[event_id].last_sale = 0;
                 } else { // event in future, place it on today
                     const diffDates = (chartData[event_id].event_date - today)/(1000 * 60 * 60 * 24);
-                    chartData[event_id].sales.push({days_before_event:diffDates,tickets_sold:0,cum_tickets_sold:totalTicketsSold,pointStyle: 'crossRot'});
+                    chartData[event_id].sales.push({days_before_event:diffDates,tickets_sold:0,cum_tickets_sold:totalTicketsSold});
+                    chartData[event_id].last_sale = diffDates;
                 }
             }
         }
@@ -149,14 +159,12 @@ echo '</script>';
                     data: chartData[event_id].sales.map((row) => (
                         {
                             x: row.days_before_event,
-                            y: row.cum_tickets_sold,
-                            pointStyle: row.pointStyle || 'circle'
+                            y: row.cum_tickets_sold
                         }
                         )),
                     borderColor: '#' + Math.floor(Math.random()*16777215).toString(16), // Random color
                     fill: false,
                     showLine: true, // Ensures lines are drawn between points
-                    pointStyle: 'circle' // Default point style for the dataset
                 });
             }
         }

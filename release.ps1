@@ -22,12 +22,24 @@ Copy-Item -Path "Helper" -Destination "$tempFolder\Helper" -Recurse
 Copy-Item -Path "LICENSE" -Destination $tempFolder
 Copy-Item -Path "*.html" -Destination $tempFolder
 Copy-Item -Path "*.php" -Destination $tempFolder
-Copy-Item -Path "mod_eventchart.xml" -Destination $tempFolder
+Copy-Item -Path "*mod_eventchart.xml" -Destination $tempFolder
 
 # Create the ZIP file from the temporary folder
-Compress-Archive -Path "$tempFolder\*" -DestinationPath $zipFile
+# Path to 7z.exe
+$sevenZipPath = "C:\Program Files\7-Zip\7z.exe"
+
+# Windows zip does not work with standard PHP unzip
+# Compress-Archive -Path "$tempFolder\*" -DestinationPath $zipFile
+
+# Create the ZIP file using 7-Zip
+& "$sevenZipPath" a -tzip "$zipFile" "$tempFolder\*"
+
+# Check if the ZIP file was created successfully
+if (Test-Path $zipFile) {
+    Write-Output "ZIP file created successfully: $zipFile"
+} else {
+    Write-Output "Failed to create ZIP file"
+}
 
 # Clean up the temporary folder
 Remove-Item -Recurse -Force $tempFolder
-
-Write-Output "ZIP file created successfully: $zipFile"
