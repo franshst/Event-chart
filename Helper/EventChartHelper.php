@@ -35,31 +35,31 @@ class EventChartHelper
 
         $eventData = array();
         foreach ($events as $row) {
-            $event_id = $row['event_id'];
-            $event_date = strtotime($row['event_date']);
-            if (!isset($eventData[$event_id])) {
-                $cum_tickets_sold = 0;
-                $eventData[$event_id] = array(
-                'event_id' => $row['event_id'],
-                'event_date' => $event_date,
+            $eventId = $row['eventId'];
+            $eventDate = strtotime($row['eventDate']);
+            if (!isset($eventData[$eventId])) {
+                $cumRegistrants = 0;
+                $eventData[$eventId] = array(
+                'eventId' => $row['eventId'],
+                'eventDate' => $eventDate,
                 'title'=> $row['title'],
-                'location_id' => $row['location_id'],
-                'categoryIdList' => $categories[$event_id], // here insert the list of categories
-                'event_capacity' => $row['event_capacity'],
+                'locationId' => $row['locationId'],
+                'categoryIdList' => $categories[$eventId], // here insert the list of categories
+                'eventCapacity' => $row['eventCapacity'],
                 'sales' => array());
             }
 
             // Calculate cumulative tickets sold for each event
-            $cum_tickets_sold = $cum_tickets_sold + $row['tickets_sold'];
-            $sale_date = strtotime($row['sale_date']);
-            $days_before_event = ($event_date - $sale_date) / (60 * 60 * 24);
+            $cumRegistrants = $cumRegistrants + $row['numberRegistrants'];
+            $registerDate = strtotime($row['registerDate']);
+            $daysBeforeEvent = ($eventDate - $registerDate) / (60 * 60 * 24);
             $sales = array(
-                'sale_date' => $sale_date,
-                'days_before_event' => $days_before_event,
-                'tickets_sold' => $row['tickets_sold'],
-                'cum_tickets_sold' => $cum_tickets_sold);
+                'registerDate' => $registerDate,
+                'daysBeforeEvent' => $daysBeforeEvent,
+                'numberRegistrants' => $row['numberRegistrants'],
+                'cumRegistrants' => $cumRegistrants);
 
-            array_push($eventData[$event_id]['sales'], $sales); // here push the sale
+            array_push($eventData[$eventId]['sales'], $sales); // here push the sale
         }
 
         return $eventData;
@@ -72,7 +72,7 @@ class EventChartHelper
 
         //construct field list
         $fieldlist = $db->quoteName(['#__eb_events.id', 'title', 'event_date', 'event_capacity', 'location_id', '#__eb_registrants.id', 'register_date', 'number_registrants'],
-                                    ['event_id'       , null   , null        , null            , null         , 'registrant_id'       , 'sale_date'    , 'tickets_sold']);
+                                    ['eventId'       , null   , 'eventDate'  , 'eventCapacity' , 'locationId' , 'registrantId'        , 'registerDate' , 'numberRegistrants']);
 
         $query = $db->getQuery(true)
                     ->select($fieldlist)
@@ -81,7 +81,7 @@ class EventChartHelper
                     ->where($db->quoteName('#__eb_events.published')           . '= 1')
                     ->where($db->quoteName('#__eb_registrants.published')      . '= 1')
                     ->where($db->quoteName('#__eb_registrants.payment_status') . '= 1')
-                    ->order($db->quoteName(['event_id','#__eb_registrants.register_date']));
+                    ->order($db->quoteName(['eventId','RegisterDate']));
 
 
         // Prepare the query
@@ -93,7 +93,7 @@ class EventChartHelper
     private static function getEventCategories() {
         $db = Factory::getContainer()->get('DatabaseDriver');
         $query = $db->getquery(true)
-                    ->select($db->quoteName(['event_id','category_id']))
+                    ->select($db->quoteName(['event_id','category_id'],['eventId','categoryId']))
                     ->from($db->quoteName('#__eb_event_categories'));
         $db->setQuery($query);
         $results = $db->loadAssocList();
@@ -102,16 +102,16 @@ class EventChartHelper
 
         // Process the results to structure the array as desired
         foreach ($results as $row) {
-            $event_id = $row['event_id'];
-            $category_id = $row['category_id'];
+            $eventId = $row['eventId'];
+            $categoryId = $row['categoryId'];
             
-            // Check if the event_id key already exists in the categories array
-            if (!isset($categories[$event_id])) {
-                $categories[$event_id] = [];
+            // Check if the eventId key already exists in the categories array
+            if (!isset($categories[$eventId])) {
+                $categories[$eventId] = [];
             }
             
-            // Add the category_id to the event's category list
-            $categories[$event_id][] = $category_id;
+            // Add the categoryId to the event's category list
+            $categories[$eventId][] = $categoryId;
         }
         return $categories;
     }

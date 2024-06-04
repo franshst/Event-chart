@@ -29,7 +29,11 @@ echo 'var categoryData = ' . json_encode($categoryData) . ';';
 
 // TODO
 // Defaults for filters as component fields
-// Multi-lingual?
+// Refactor last sale to mod_eventchart.php
+// All underscores to camelCase (from database call)
+// Multi-lingual
+// Separate js file
+// Minify js file
 
 
 
@@ -96,10 +100,10 @@ echo '</script>';
     // returns true if event is included in the chart
     function filterEvent(event, filter){
         return(
-            event.event_date >= filter.from &&
-            event.last_sale <= filter.range &&
+            event.eventDate >= filter.from &&
+            event.lastRegistration <= filter.range &&
             (filter.title === '' || event.title.toUpperCase().includes(filter.title.toUpperCase())) &&
-            ((filter.locationID == -1) || (event.location_id == filter.locationID)) &&
+            ((filter.locationId == -1) || (event.locationId == filter.locationId)) &&
             (filter.categoryIdList.length == 0 || anyMatch(event.categoryIdList, filter.categoryIdList))
         );
     }
@@ -108,42 +112,42 @@ echo '</script>';
     // used to calculate the range of the chart.
     function firstSale(chartData, filter) {
         let first = 7; // minimum range is 7 days
-        for (var event_id in chartData) {
-            if (filterEvent(chartData[event_id],filter)) {
-                chartData[event_id].sales.forEach((sale) => {
-                    if (sale.days_before_event > first) first = sale.days_before_event;
+        for (var eventId in chartData) {
+            if (filterEvent(chartData[eventId],filter)) {
+                chartData[eventId].sales.forEach((sale) => {
+                    if (sale.daysBeforeEvent > first) first = sale.daysBeforeEvent;
                 });
             }
         }
         return first;
     }
 
-    // populate chartData with last_sale of each event.
+    // populate chartData with lastRegistration of each event.
     // hmm, this should be moved to php while processing the data from the db
     function insertLastSaleByEvent(chartData) {
-        for (var event_id in chartData){
+        for (var eventId in chartData){
             var lastSale = 99999; //infinitely in the past
             var lastSaleDate = new Date(-8640000000000000); //on the minimum date
-            var totalTicketsSold = 0; //a sale of 0
-            chartData[event_id].sales.forEach((sale) => {
-                if (sale.days_before_event < lastSale) {
-                    lastSale = sale.days_before_event;
-                    lastSaleDate = sale.sale_date;
-                    totalTicketsSold = sale.cum_tickets_sold;
+            var cumRegistrants = 0; //a sale of 0
+            chartData[eventId].sales.forEach((sale) => {
+                if (sale.daysBeforeEvent < lastSale) {
+                    lastSale = sale.daysBeforeEvent;
+                    lastSaleDate = sale.registerDate;
+                    cumRegistrants = sale.cumRegistrants;
                 }
             });
-            chartData[event_id].last_sale = lastSale;
+            chartData[eventId].lastRegistration = lastSale;
 
-            if ((lastSale != 99999) && (lastSaleDate < chartData[event_id].event_date)) { // if any sales and if last sale is before the event date
+            if ((lastSale != 99999) && (lastSaleDate < chartData[eventId].eventDate)) { // if any sales and if last sale is before the event date
                 // place an extra datapoint
                 let today = new Date();
-                if (today > chartData[event_id].event_date) { // event has passed, place it on event_date
-                    chartData[event_id].sales.push({days_before_event:0,tickets_sold:0,cum_tickets_sold:totalTicketsSold});
-                    chartData[event_id].last_sale = 0;
+                if (today > chartData[eventId].eventDate) { // event has passed, place it on eventDate
+                    chartData[eventId].sales.push({daysBeforeEvent:0,numberRegistrants:0,cumRegistrants:cumRegistrants});
+                    chartData[eventId].lastRegistration = 0;
                 } else { // event in future, place it on today
-                    const diffDates = (chartData[event_id].event_date - today)/(1000 * 60 * 60 * 24);
-                    chartData[event_id].sales.push({days_before_event:diffDates,tickets_sold:0,cum_tickets_sold:totalTicketsSold});
-                    chartData[event_id].last_sale = diffDates;
+                    const diffDates = (chartData[eventId].eventDate - today)/(1000 * 60 * 60 * 24);
+                    chartData[eventId].sales.push({daysBeforeEvent:diffDates,numberRegistrants:0,cumRegistrants:cumRegistrants});
+                    chartData[eventId].lastRegistration = diffDates;
                 }
             }
         }
@@ -151,15 +155,15 @@ echo '</script>';
 
     // populate the chartjs datasets, from chartData, with filters
     function loadData(chartData, datasets, filter) {
-        for (var event_id in chartData) {
-            if (filterEvent(chartData[event_id], filter)) {
+        for (var eventId in chartData) {
+            if (filterEvent(chartData[eventId], filter)) {
                 datasets.push({
-                    label: chartData[event_id].title,
-                    order: 0-chartData[event_id].event_date,
-                    data: chartData[event_id].sales.map((row) => (
+                    label: chartData[eventId].title,
+                    order: 0-chartData[eventId].eventDate,
+                    data: chartData[eventId].sales.map((row) => (
                         {
-                            x: row.days_before_event,
-                            y: row.cum_tickets_sold
+                            x: row.daysBeforeEvent,
+                            y: row.cumRegistrants
                         }
                         )),
                     borderColor: '#' + Math.floor(Math.random()*16777215).toString(16), // Random color
@@ -189,7 +193,7 @@ echo '</script>';
     }
 
     // convert PHP data to javascript data
-    convertDates(chartData,['event_date','sale_date']);
+    convertDates(chartData,['eventDate','registerDate']);
 
     // add the last sale
     insertLastSaleByEvent(chartData);
@@ -209,7 +213,7 @@ echo '</script>';
     // document.write(fromDate);
     filter.title = '';
     filter.location = 'Mezrab';
-    filter.locationID = "-1"; // will be replaced, see below
+    filter.locationId = "-1"; // will be replaced, see below
     filter.category = 'Hoofdpagina - Bal';
     filter.categoryIdList = []; // will be replaced
     filter.first = firstSale(chartData, filter); // to calculate the maximum x range of the chart
@@ -231,7 +235,7 @@ echo '</script>';
     addOption(locationDropdown,filter.locationAll,"-1",false);
     for (var id in locationData){
         if (filter.location == locationData[id].name)
-            filter.locationID = locationData[id].id;
+            filter.locationId = locationData[id].id;
         addOption(locationDropdown,locationData[id].name,locationData[id].id,locationData[id].name == filter.location);
     }
 
@@ -300,7 +304,7 @@ echo '</script>';
     }
 
     window.changeLocation = function(newFilter) {
-        filter.locationID = newFilter;
+        filter.locationId = newFilter;
 /*        if (newFilter == -1) {
             filter.location = filter.locationAll;
         } else {
