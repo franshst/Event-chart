@@ -4,11 +4,11 @@
         <description>Module to display a line chart of event bookings.</description>
         <element>mod_eventchart</element>
         <type>module</type>
-        <version>0.0.14</version>
+        <version>0.0.15</version>
         <infourl title="Event Chart releases">https://github.com/franshst/Event-chart/releases</infourl>
         <downloads>
             <downloadurl type="full" format="zip">
-                https://github.com/franshst/Event-chart/releases/download/v0.0.14/mod_eventchart.zip
+                https://github.com/franshst/Event-chart/releases/download/v0.0.15/mod_eventchart.zip
             </downloadurl>
         </downloads>
         <maintainer>Frans Stuurman</maintainer>

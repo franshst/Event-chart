@@ -4,7 +4,7 @@
     <author>Frans Stuurman</author>
     <copyright>(c) Frans Stuurman 2024</copyright>
     <licence>MIT</licence>
-    <version>0.0.14</version>
+    <version>0.0.15</version>
     <description>Module to display a line chart of event bookings.</description>
     <updateservers>
         <server type="extension" priority="1" name="Eventchart">https://github.com/franshst/Event-chart/releases/latest/download/eventchart_update.xml</server>

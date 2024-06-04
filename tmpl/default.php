@@ -190,7 +190,7 @@ echo '</script>';
     filter.rangeAll = "-- Display horizontal range --";
     filter.histAll = "-- Include past events --";
 
-    filter.past = 365;
+    filter.past = 183;
     filter.range = 31;
     // include events in this date range
     filter.from = new Date(); filter.from.setDate(filter.from.getDate() - filter.past);
@@ -235,8 +235,8 @@ echo '</script>';
     var histDropdown = document.getElementById("fsECpast");
     addOption(histDropdown,filter.histAll,99999,false);
     addOption(histDropdown,"3 months",92,false);
-    addOption(histDropdown,"6 months",183,false);
-    addOption(histDropdown,"1 year",365,true); // default
+    addOption(histDropdown,"6 months",183,true); // default
+    addOption(histDropdown,"1 year",365,false);
     addOption(histDropdown,"2 years",730,false);
 
 
