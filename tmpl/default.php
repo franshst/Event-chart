@@ -9,7 +9,7 @@
  */
 
 /* task of this file
-    Display a chart of sales
+    Display a chart of registrations
 */
 
 // No direct access
@@ -29,8 +29,6 @@ echo 'var categoryData = ' . json_encode($categoryData) . ';';
 
 // TODO
 // Defaults for filters as component fields
-// Refactor last sale to mod_eventchart.php
-// All underscores to camelCase (from database call)
 // Multi-lingual
 // Separate js file
 // Minify js file
@@ -114,7 +112,7 @@ echo '</script>';
         let first = 7; // minimum range is 7 days
         for (var eventId in chartData) {
             if (filterEvent(chartData[eventId],filter)) {
-                chartData[eventId].sales.forEach((sale) => {
+                chartData[eventId].registrations.forEach((sale) => {
                     if (sale.daysBeforeEvent > first) first = sale.daysBeforeEvent;
                 });
             }
@@ -122,33 +120,19 @@ echo '</script>';
         return first;
     }
 
-    // populate chartData with lastRegistration of each event.
-    // hmm, this should be moved to php while processing the data from the db
-    function insertLastSaleByEvent(chartData) {
-        for (var eventId in chartData){
-            var lastSale = 99999; //infinitely in the past
-            var lastSaleDate = new Date(-8640000000000000); //on the minimum date
-            var cumRegistrants = 0; //a sale of 0
-            chartData[eventId].sales.forEach((sale) => {
-                if (sale.daysBeforeEvent < lastSale) {
-                    lastSale = sale.daysBeforeEvent;
-                    lastSaleDate = sale.registerDate;
-                    cumRegistrants = sale.cumRegistrants;
+    // insert extra datapoint to extend the line to today or event date
+    function insertExtraDatapoint(chartData) {
+        for (var eventId in chartData) {
+            let today = new Date();
+            if (chartData[eventId].eventDate < today) { // event in the past, insert the final number of registrants
+                if (chartData[eventId].eventDate > chartData[eventId].lastRegistrationDate) {
+                    chartData[eventId].registrations.push({registerDate: chartData[eventId].eventDate, daysBeforeEvent: 0 ,numberRegistrants: 0, cumRegistrants: chartData[eventId].cumRegistrants});
+                    //chartData[eventId].lastRegistration = 0; //do we need this? Will place a horizontal line if last sale was before the horizontal range for a past event.
                 }
-            });
-            chartData[eventId].lastRegistration = lastSale;
-
-            if ((lastSale != 99999) && (lastSaleDate < chartData[eventId].eventDate)) { // if any sales and if last sale is before the event date
-                // place an extra datapoint
-                let today = new Date();
-                if (today > chartData[eventId].eventDate) { // event has passed, place it on eventDate
-                    chartData[eventId].sales.push({daysBeforeEvent:0,numberRegistrants:0,cumRegistrants:cumRegistrants});
-                    chartData[eventId].lastRegistration = 0;
-                } else { // event in future, place it on today
-                    const diffDates = (chartData[eventId].eventDate - today)/(1000 * 60 * 60 * 24);
-                    chartData[eventId].sales.push({daysBeforeEvent:diffDates,numberRegistrants:0,cumRegistrants:cumRegistrants});
-                    chartData[eventId].lastRegistration = diffDates;
-                }
+            } else { // event in the future, extend the line to today, to show the number of registrants as of today
+                const diffDates = (chartData[eventId].eventDate - today)/(1000 * 60 * 60 * 24);
+                chartData[eventId].registrations.push({registerDate: today, daysBeforeEvent: diffDates, numberRegistrants: 0, cumRegistrants: chartData[eventId].cumRegistrants});
+                chartData[eventId].lastRegistration = diffDates;
             }
         }
     }
@@ -160,7 +144,7 @@ echo '</script>';
                 datasets.push({
                     label: chartData[eventId].title,
                     order: 0-chartData[eventId].eventDate,
-                    data: chartData[eventId].sales.map((row) => (
+                    data: chartData[eventId].registrations.map((row) => (
                         {
                             x: row.daysBeforeEvent,
                             y: row.cumRegistrants
@@ -193,10 +177,11 @@ echo '</script>';
     }
 
     // convert PHP data to javascript data
-    convertDates(chartData,['eventDate','registerDate']);
+    convertDates(chartData,['eventDate','registerDate','firstRegistrationDate','lastRegistrationDate']);
+    console.log(chartData);
 
-    // add the last sale
-    insertLastSaleByEvent(chartData);
+    // extend graph to event date or today
+    insertExtraDatapoint(chartData);
 
     //  Calculate filters
     var filter = {};

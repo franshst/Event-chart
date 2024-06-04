@@ -37,6 +37,8 @@ class EventChartHelper
         foreach ($events as $row) {
             $eventId = $row['eventId'];
             $eventDate = strtotime($row['eventDate']);
+
+            // create new event item in the array
             if (!isset($eventData[$eventId])) {
                 $cumRegistrants = 0;
                 $eventData[$eventId] = array(
@@ -46,27 +48,44 @@ class EventChartHelper
                 'locationId' => $row['locationId'],
                 'categoryIdList' => $categories[$eventId], // here insert the list of categories
                 'eventCapacity' => $row['eventCapacity'],
-                'sales' => array());
+                'cumRegistrants' => 0,
+                'registrations' => array());
             }
 
             // Calculate cumulative tickets sold for each event
             $cumRegistrants = $cumRegistrants + $row['numberRegistrants'];
             $registerDate = strtotime($row['registerDate']);
-            $daysBeforeEvent = ($eventDate - $registerDate) / (60 * 60 * 24);
-            $sales = array(
+            $daysBeforeEvent = ($eventDate - $registerDate) / (60 * 60 * 24); // note this is relative to event date, so higher numbers mean earlier registration
+
+            // calculate first and last registration
+            if (array_key_exists('firstRegistration',$eventData[$eventId])) {
+                $eventData[$eventId]['firstRegistration'] = max($eventData[$eventId]['firstRegistration'],$daysBeforeEvent);
+                $eventData[$eventId]['lastRegistration'] = min($eventData[$eventId]['lastRegistration'],$daysBeforeEvent);
+                $eventData[$eventId]['firstRegistrationDate'] = min($eventData[$eventId]['firstRegistrationDate'],$registerDate);
+                $eventData[$eventId]['lastRegistrationDate'] = max($eventData[$eventId]['lastRegistrationDate'],$registerDate);
+            } else {
+                $eventData[$eventId]['firstRegistration'] = $daysBeforeEvent;
+                $eventData[$eventId]['lastRegistration'] = $daysBeforeEvent;
+                $eventData[$eventId]['firstRegistrationDate'] = $registerDate;
+                $eventData[$eventId]['lastRegistrationDate'] = $registerDate;
+            }
+
+            // update total number of registrations
+            $eventData[$eventId]['cumRegistrants'] = max($eventData[$eventId]['cumRegistrants'],$cumRegistrants);
+
+            // add registration
+            $registrations = array(
                 'registerDate' => $registerDate,
                 'daysBeforeEvent' => $daysBeforeEvent,
                 'numberRegistrants' => $row['numberRegistrants'],
                 'cumRegistrants' => $cumRegistrants);
 
-            array_push($eventData[$eventId]['sales'], $sales); // here push the sale
+            array_push($eventData[$eventId]['registrations'], $registrations); // here push the sale
         }
-
         return $eventData;
-
     }
 
-    // get events including registrations
+    // get events from database including registrations
     private static function getEvents() {
         $db = Factory::getContainer()->get('DatabaseDriver');
 
@@ -90,6 +109,7 @@ class EventChartHelper
         return $db->loadAssocList();
     }
 
+    // get category list from each event from database
     private static function getEventCategories() {
         $db = Factory::getContainer()->get('DatabaseDriver');
         $query = $db->getquery(true)
@@ -116,6 +136,7 @@ class EventChartHelper
         return $categories;
     }
 
+    // get locations from database
     public static function getLocationData() {
         $db = Factory::getContainer()->get('DatabaseDriver');
         $query = $db->getQuery(true)
@@ -126,6 +147,8 @@ class EventChartHelper
         return $db->loadAssocList();
     }
 
+    // get the category names from the database, and process the hierarchical data, so that a certain category has a list of category ids of all ancestor and child categories
+    // this is used to create a filter on categories, where an event category will match a category with its children. (ancesters are included in case an event has an ancestor category id.)
     public static function getCategoryData() {
         $db = Factory::getContainer()->get('DatabaseDriver');
         $query = $db->getQuery(true)
