@@ -32,7 +32,7 @@ $sevenZipPath = "C:\Program Files\7-Zip\7z.exe"
 # Compress-Archive -Path "$tempFolder\*" -DestinationPath $zipFile
 
 # Create the ZIP file using 7-Zip
-& "$sevenZipPath" a -tzip "$zipFile" "$tempFolder\*"
+& "$sevenZipPath" a -tzip "$zipFile" ".\$tempFolder\*"
 
 # Check if the ZIP file was created successfully
 if (Test-Path $zipFile) {

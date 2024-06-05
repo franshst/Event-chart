@@ -28,10 +28,11 @@ echo 'var categoryData = ' . json_encode($categoryData) . ';';
 // echo 'var category = [\'Bal\'];'
 
 // TODO
-// Defaults for filters as component fields
+// Defaults for filters as component parameter fields 
 // Multi-lingual
 // Separate js file
 // Minify js file
+// checksum of zip file
 
 
 
@@ -178,7 +179,6 @@ echo '</script>';
 
     // convert PHP data to javascript data
     convertDates(chartData,['eventDate','registerDate','firstRegistrationDate','lastRegistrationDate']);
-    console.log(chartData);
 
     // extend graph to event date or today
     insertExtraDatapoint(chartData);

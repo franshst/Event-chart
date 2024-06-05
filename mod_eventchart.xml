@@ -14,8 +14,79 @@
         <filename>mod_eventchart.xml</filename>
         <filename module="mod_eventchart">mod_eventchart.php</filename>
         <folder>tmpl</folder>
+        <!-- folder>language</folder -->
         <folder>Helper</folder>
     </files>
+    <languages>
+        <language tag="en-GB">en-GB.mod_eventchart.ini</language>
+        <language tag="nl-NL">nl-NL.mod_eventchart.ini</language>
+    </languages>
     <config>
+        <fields name="params">
+            <fieldset name="basic">
+                <field
+                    name="title"
+                    type="text"
+                    label="MOD_EVENTCHART_DEFAULT_TITLE"
+                />
+                <field
+                    name="location"
+                    type="sql"
+                    default="0"
+                    label="MOD_EVENTCHART_DEFAULT_LOCATION"
+                    query="
+                    SELECT `id`, REPLACE(`name`, '&amp;nbsp', ' ') AS `name`, `name` AS `sortby`
+                    FROM `#__eb_locations`
+                    UNION
+                    SELECT '0','MOD_EVENTCHART_ALL', 'AAAAAA'
+                    ORDER by `sortby`
+                    "
+                    key_field="id"
+                    value_field="name"
+                    translate="true"
+                />
+                <field
+                    name="category"
+                    type="sql"
+                    default="0"
+                    label="MOD_EVENTCHART_DEFAULT_CATEGORY"
+                    query="
+                    WITH RECURSIVE `categories` (`prefix`, `name`, `fullname`, `id`) AS (
+                        SELECT CAST('' AS VARCHAR(20)) AS `prefix`, `name`, `name` AS `fullname`, `id` FROM `#__eb_categories`
+                            WHERE `parent` = 0
+                    UNION
+                        SELECT CONCAT(`categories`.`prefix`,' - '), `cat_children`.`name`, CONCAT(`categories`.`fullname`, ' - ', `cat_children`.`name`), `cat_children`.`id` 
+                            FROM `categories`
+                        JOIN `#__eb_categories` AS `cat_children`
+                            ON `categories`.`id` = `cat_children`.`parent`
+                    )
+                    SELECT CONCAT(`prefix`,`name`) AS `name`, `id`, `fullname` FROM `categories`
+                    UNION 
+                    SELECT 'MOD_EVENTCHART_ALL','0','AAAAAA'
+                    ORDER BY `fullname`"
+                    key_field="id"
+                    value_field="name"
+                    translate="true"
+                />
+                <field
+                    name="range"
+                    type="number"
+                    label="MOD_EVENTCHART_DEFAULT_RANGE"
+                    default="6"
+                    first="1"
+                    last="9999"
+                    step="1"
+                />
+                <field
+                    name="past"
+                    type="number"
+                    label="MOD_EVENTCHART_DEFAULT_PAST"
+                    default="6"
+                    first="1"
+                    last="9999"
+                    step="1"
+                />
+            </fieldset>
+        </fields>
     </config>
 </extension>
