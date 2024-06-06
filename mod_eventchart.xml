@@ -18,8 +18,8 @@
         <folder>Helper</folder>
     </files>
     <languages>
-        <language tag="en-GB">en-GB.mod_eventchart.ini</language>
-        <language tag="nl-NL">nl-NL.mod_eventchart.ini</language>
+        <language tag="en-GB">language\en-GB\en-GB.mod_eventchart.ini</language>
+        <language tag="nl-NL">language\nl-NL\nl-NL.mod_eventchart.ini</language>
     </languages>
     <config>
         <fields name="params">

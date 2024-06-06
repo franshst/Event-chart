@@ -17,6 +17,7 @@ namespace EventChartNamespace\Module\EventChart\Site\Helper;
 defined('_JEXEC') or die;
 
 use Joomla\CMS\Factory;
+use Joomla\CMS\Language\Text;
 class EventChartHelper
 {
     /**
@@ -145,6 +146,44 @@ class EventChartHelper
 
         $db->setQuery($query);
         return $db->loadAssocList();
+    }
+
+    public static function getEventCategoryData2() {
+        $db = Factory::getContainer()->get('DatabaseDriver');
+        $query = $db->getQuery(true)
+            ->select($db->quoteName(['id','name','parent']))
+            ->from($db->quoteName('#__eb_categories'));
+
+        $db->setQuery($query);
+        return $db->loadAssocList();
+    }
+
+    public static function getEventCategoriesDropdownData() {
+        $db = Factory::getContainer()->get('DatabaseDriver');
+        $query = "
+            WITH RECURSIVE `categories` (`prefix`, `name`, `fullname`, `id`) AS (
+                SELECT CAST('' AS CHAR(20)) AS `prefix`, `name`, `name` AS `fullname`, `id` FROM `#__eb_categories`
+                    WHERE `parent` = 0
+                UNION
+                SELECT CONCAT(`categories`.`prefix`,' - '), `cat_children`.`name`, CONCAT(`categories`.`fullname`, ' - ', `cat_children`.`name`), `cat_children`.`id` 
+                    FROM `categories`
+                JOIN `#__eb_categories` AS `cat_children`
+                    ON `categories`.`id` = `cat_children`.`parent`
+            )
+            SELECT CONCAT(`prefix`,`name`) AS `name`, `id`, `fullname` FROM `categories`
+            UNION 
+            SELECT 'MOD_EVENTCHART_ALL','0','AAAAAA'
+            ORDER BY `fullname`;
+        ";
+        $db->setQuery($query);
+        // as a numbered array, because the order is important.
+        $results = $db->loadObjectList();
+        foreach ($results as $result) {
+            // translate;
+            $result->name = Text::_($result->name);
+        }
+        // echo '<pre>' . print_r($results, true) . '</pre>';
+        return $results;
     }
 
     /*

@@ -16,19 +16,18 @@
 defined('_JEXEC') or die;
 
 echo '<script>';
-// all dates are unix timestamp in seconds
-//echo 'document.write(\'tot hier\');';
+// export php data to javascript
+// note: php dates are unix timestamp in seconds
 echo 'var chartData = ' . json_encode($eventData) . ';';
 echo 'var locationData = ' . json_encode($locationData) . ';';
 echo 'var categoryData = ' . json_encode($categoryData) . ';';
-// default filter items, from future module options
-// echo 'var past = 365;'
-// echo 'var range = 30;'
-// echo 'var titleFilter = \'Mezrab\';'
-// echo 'var category = [\'Bal\'];'
+echo 'var categoryData2 = ' . json_encode($categoryData2) . ';';
+echo 'var categoryDropDownData' . json_encode($categoryDropDownData) . ';';
+echo 'var params = ' . json_encode($params->toArray()) . ';';
 
 // TODO
-// Defaults for filters as component parameter fields 
+// refactor category filter
+// Use defaults
 // Multi-lingual
 // Separate js file
 // Minify js file
@@ -65,6 +64,7 @@ echo '</script>';
     import {Chart, LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Legend, Tooltip} from 'https://cdn.skypack.dev/chart.js';
     Chart.register(LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Legend, Tooltip);
 
+    console.log(params);
     // function convertDates written by chatgpt
     // conversion of PHP datetime values to javascript datetime values
     function convertDates(obj, dateFields) {
