@@ -18,11 +18,9 @@ defined('_JEXEC') or die;
 echo '<script>';
 // export php data to javascript
 // note: php dates are unix timestamp in seconds
-echo 'var chartData = ' . json_encode($eventData) . ';';
+echo 'var eventData = ' . json_encode($eventData) . ';';
 echo 'var locationData = ' . json_encode($locationData) . ';';
 echo 'var categoryData = ' . json_encode($categoryData) . ';';
-echo 'var categoryData2 = ' . json_encode($categoryData2) . ';';
-echo 'var categoryDropDownData' . json_encode($categoryDropDownData) . ';';
 echo 'var params = ' . json_encode($params->toArray()) . ';';
 
 // TODO
@@ -52,10 +50,10 @@ echo '</script>';
             <select id="fsECcat" class="form-select form-select-sm col-sm-2" oninput="changeCategory(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></select>
         </div>
         <div class="col-auto">
-            <select id="fsECpast" class="form-select form-select-sm mcol-sm-2" oninput="changePast(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></select>
+            <input id="fsECpast" type="number" min="0" class="form-control form-control-sm mcol-sm-2" oninput="changePast(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></input>
         </div>
         <div class="col-auto">
-            <select id="fsECrange" class="form-select form-select-sm col-sm-2" oninput="changeRange(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></select>
+            <input id="fsECrange" type="number" min="0" class="form-control form-control-sm col-sm-2" oninput="changeRange(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></input>
         </div>
     </div>
 </div>
@@ -64,7 +62,8 @@ echo '</script>';
     import {Chart, LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Legend, Tooltip} from 'https://cdn.skypack.dev/chart.js';
     Chart.register(LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Legend, Tooltip);
 
-    console.log(params);
+    const weeks = 7;
+    const months = 365/12;
     // function convertDates written by chatgpt
     // conversion of PHP datetime values to javascript datetime values
     function convertDates(obj, dateFields) {
@@ -83,37 +82,52 @@ echo '</script>';
         }
     }
 
-    // matches true, if any member in an array is equal to any member in other array
-    function anyMatch(array1,array2) {
-        var match = false;
-        main: for(var element1 of array1) {
-            for (var element2 of array2) {
-                if (element1 == element2) {
-                    match = true; break main;
-                }
-            }
+    // test if one of the categories of an event, or one of the parents of the category is matched by the filter
+    // eventCategoryIdList: list of category id's
+    // categoryIdFilter: the id to match
+    // categoryData (global structure): list of 'id', 'name', 'parent'
+    function matchIdListCategory(eventCategoryIdList, categoryIdFilter) {
+        if (categoryIdFilter == 0) return true;
+        for (let id of eventCategoryIdList) {
+            // if any event category matched the filter, return true
+            if (matchIdCategory(id, categoryIdFilter)) return true;
         }
-        return match;
+        return false;
     }
+    // as above, test parents
+    function matchIdCategory(eventCategoryId, categoryIdFilter) {
+        let category = categoryData.find(cat => cat.id == eventCategoryId);
+        if (category) { // should always be a valid category, because there should never be an event with an invalid category id.
+            if (category.id == categoryIdFilter) return true; // we have a match
+            if (category.parent == 0) return false; // no match, no parent
+            return matchIdCategory(category.parent, categoryIdFilter); // test parent
+        }
+        return false; // if category is not found, return false. Should never happen.
+    }
+
 
     // returns true if event is included in the chart
     function filterEvent(event, filter){
+        // include events in this date range
+        let fromDate = new Date(); fromDate.setDate(fromDate.getDate() - filter.past*months);
+        //toDate = new Date(); toDate.setDate(toDate.getDate() + filter.range);
         return(
-            event.eventDate >= filter.from &&
-            event.lastRegistration <= filter.range &&
             (filter.title === '' || event.title.toUpperCase().includes(filter.title.toUpperCase())) &&
-            ((filter.locationId == -1) || (event.locationId == filter.locationId)) &&
-            (filter.categoryIdList.length == 0 || anyMatch(event.categoryIdList, filter.categoryIdList))
+            ((filter.location == 0) || (event.locationId == filter.location)) &&
+            matchIdListCategory(event.categoryIdList, filter.category) &&
+            (filter.past == 0 || event.eventDate >= fromDate) &&
+            (filter.range == 0 || event.lastRegistration <= filter.range*weeks)
         );
     }
 
-    // returns how many days ago the first sale was of every filtered event (relative to event date)
+    // returns how many days ago the first sale was of filtered events (relative to event date)
     // used to calculate the range of the chart.
-    function firstSale(chartData, filter) {
+    // uses global eventData
+    function firstSale(filter) {
         let first = 7; // minimum range is 7 days
-        for (var eventId in chartData) {
-            if (filterEvent(chartData[eventId],filter)) {
-                chartData[eventId].registrations.forEach((sale) => {
+        for (let eventId in eventData) {
+            if (filterEvent (eventData[eventId], filter)) {
+                eventData[eventId].registrations.forEach((sale) => {
                     if (sale.daysBeforeEvent > first) first = sale.daysBeforeEvent;
                 });
             }
@@ -121,31 +135,35 @@ echo '</script>';
         return first;
     }
 
-    // insert extra datapoint to extend the line to today or event date
-    function insertExtraDatapoint(chartData) {
-        for (var eventId in chartData) {
+    // insert extra datapoint into eventData to extend the line to today or event date
+    // uses global eventData
+    function insertExtraDatapoint() {
+        for (let eventId in eventData) {
             let today = new Date();
-            if (chartData[eventId].eventDate < today) { // event in the past, insert the final number of registrants
-                if (chartData[eventId].eventDate > chartData[eventId].lastRegistrationDate) {
-                    chartData[eventId].registrations.push({registerDate: chartData[eventId].eventDate, daysBeforeEvent: 0 ,numberRegistrants: 0, cumRegistrants: chartData[eventId].cumRegistrants});
-                    //chartData[eventId].lastRegistration = 0; //do we need this? Will place a horizontal line if last sale was before the horizontal range for a past event.
+            if (eventData[eventId].eventDate < today) { // event in the past, insert the final number of registrants
+                if (eventData[eventId].eventDate > eventData[eventId].lastRegistrationDate) {
+                    eventData[eventId].registrations.push({registerDate: eventData[eventId].eventDate, daysBeforeEvent: 0 ,numberRegistrants: 0, cumRegistrants: eventData[eventId].cumRegistrants});
+                    // eventData[eventId].lastRegistration = 0; //do we need this? Will place a horizontal line if last sale was before the horizontal range for a past event.
                 }
             } else { // event in the future, extend the line to today, to show the number of registrants as of today
-                const diffDates = (chartData[eventId].eventDate - today)/(1000 * 60 * 60 * 24);
-                chartData[eventId].registrations.push({registerDate: today, daysBeforeEvent: diffDates, numberRegistrants: 0, cumRegistrants: chartData[eventId].cumRegistrants});
-                chartData[eventId].lastRegistration = diffDates;
+                const diffDates = (eventData[eventId].eventDate - today)/(1000 * 60 * 60 * 24);
+                eventData[eventId].registrations.push({registerDate: today, daysBeforeEvent: diffDates, numberRegistrants: 0, cumRegistrants: eventData[eventId].cumRegistrants});
+                eventData[eventId].lastRegistration = diffDates;
             }
         }
     }
 
-    // populate the chartjs datasets, from chartData, with filters
-    function loadData(chartData, datasets, filter) {
-        for (var eventId in chartData) {
-            if (filterEvent(chartData[eventId], filter)) {
+    // populate the chartjs datasets, from eventData, with filters
+    // uses global eventData
+    function loadData(datasets, filter) {
+        console.log('loadData');
+        console.log(filter);
+        for (let eventId in eventData) {
+            if (filterEvent(eventData[eventId], filter)) {
                 datasets.push({
-                    label: chartData[eventId].title,
-                    order: 0-chartData[eventId].eventDate,
-                    data: chartData[eventId].registrations.map((row) => (
+                    label: eventData[eventId].title,
+                    order: 0 - eventData[eventId].eventDate,
+                    data: eventData[eventId].registrations.map((row) => (
                         {
                             x: row.daysBeforeEvent,
                             y: row.cumRegistrants
@@ -159,12 +177,13 @@ echo '</script>';
         }
     }
 
-    function updateChart(chart, chartData, datasets, filter) {
-        datasets = [];
-        loadData(chartData, datasets, filter);
+    // update the chart
+    // uses global eventData
+    function updateChart(chart, datasets, filter) {
+        datasets = []; // new datasets
+        loadData(datasets, filter);
         chart.data.datasets = datasets;
-        filter.first = firstSale(chartData, filter);
-        chart.options.scales.x.max = Math.min(filter.range, filter.first);
+        chart.options.scales.x.max = (filter.range == 0 ? firstSale(filter) : Math.min(filter.range*weeks, firstSale(filter)));
         chart.update();
     }
 
@@ -178,75 +197,50 @@ echo '</script>';
     }
 
     // convert PHP data to javascript data
-    convertDates(chartData,['eventDate','registerDate','firstRegistrationDate','lastRegistrationDate']);
+    convertDates(eventData,['eventDate','registerDate','firstRegistrationDate','lastRegistrationDate']);
 
     // extend graph to event date or today
-    insertExtraDatapoint(chartData);
+    insertExtraDatapoint();
 
-    //  Calculate filters
-    var filter = {};
-    filter.locationAll = "-- Filter location --";
-    filter.categoryAll = "-- Filter category --";
-    filter.rangeAll = "-- Display horizontal range --";
-    filter.histAll = "-- Include past events --";
-
-    filter.past = 183;
-    filter.range = 31;
-    // include events in this date range
-    filter.from = new Date(); filter.from.setDate(filter.from.getDate() - filter.past);
-    filter.to = new Date(); filter.to.setDate(filter.to.getDate() + filter.range);
-    // document.write(fromDate);
-    filter.title = '';
-    filter.location = 'Mezrab';
-    filter.locationId = "-1"; // will be replaced, see below
-    filter.category = 'Hoofdpagina - Bal';
-    filter.categoryIdList = []; // will be replaced
-    filter.first = firstSale(chartData, filter); // to calculate the maximum x range of the chart
+    // set defaults if not set on module parameter page.(!is_set(params.title) params.title = ''; // all titles
+    params.title = params.title ?? '';
+    params.location = params.location ?? 0;
+    params.category = params.category ?? 0;
+    params.range = params.range ?? 6;
+    params.past = params.past ?? 6;
 
     // populate filter fields in html
-    document.getElementById("fsECtitle").value = filter.title;
-    var rangeDropdown = document.getElementById("fsECrange");
-    addOption(rangeDropdown,filter.rangeAll,99999,false);
-    addOption(rangeDropdown,"1 week",7,false);
-    addOption(rangeDropdown,"2 weeks",14,false);
-    addOption(rangeDropdown,"1 month",31,true);  // default
-    addOption(rangeDropdown,"2 months",62,false);
-    addOption(rangeDropdown,"3 months",92,false);
-    addOption(rangeDropdown,"4 months",123,false);
-    addOption(rangeDropdown,"6 months",183,false);
+    document.getElementById("fsECtitle").value = params.title;
 
-    
     var locationDropdown = document.getElementById("fsECloc");
-    addOption(locationDropdown,filter.locationAll,"-1",false);
     for (var id in locationData){
-        if (filter.location == locationData[id].name)
-            filter.locationId = locationData[id].id;
-        addOption(locationDropdown,locationData[id].name,locationData[id].id,locationData[id].name == filter.location);
+        addOption(locationDropdown,locationData[id].name,locationData[id].id,locationData[id].id == params.location)
     }
 
     var categoryDropdown = document.getElementById("fsECcat");
-    addOption(categoryDropdown,filter.categoryAll,"-1",false);
-    for (var id in categoryData) {
-        addOption(categoryDropdown,categoryData[id].abbrName,categoryData[id].id,categoryData[id].fullName == filter.category)
-        if (categoryData[id].fullName == filter.category)
-            filter.categoryIdList = categoryData[id].idList;
+    for (var c of categoryData) {
+        addOption(categoryDropdown,c.name,c.id,c.id == params.category)
     }
 
-    var histDropdown = document.getElementById("fsECpast");
-    addOption(histDropdown,filter.histAll,99999,false);
-    addOption(histDropdown,"3 months",92,false);
-    addOption(histDropdown,"6 months",183,true); // default
-    addOption(histDropdown,"1 year",365,false);
-    addOption(histDropdown,"2 years",730,false);
+    document.getElementById("fsECrange").value = params.range;
+    document.getElementById("fsECpast").value = params.past;
 
+    //  Calculate initial filters
+    var filter = {};
+
+    filter.title = params.title;
+    filter.location = params.location;
+    filter.category = params.category;
+    filter.range = params.range;
+    filter.past = params.past;
 
     // load data into chart
     var datasets = [];
-    loadData(chartData, datasets, filter);
+    loadData(datasets, filter);
 
     // create chart
-    // todo x axis labels to round to integer https://www.chartjs.org/docs/latest/axes/labelling.html
-    var ctx = document.getElementById('fsECchart').getContext('2d');
+    // TODO x axis labels in weeks, days minor ticks
+    let ctx = document.getElementById('fsECchart').getContext('2d');
     var chart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -257,7 +251,7 @@ echo '</script>';
                 x: {
                     type: 'linear',
                     reverse: true,
-                    max: filter.range,
+                    max: filter.range == 0 ? firstsale(filter) : Math.min(filter.range*weeks, firstSale(filter)),
                     position: 'bottom',
                     title: {
                         display: true,
@@ -285,40 +279,26 @@ echo '</script>';
     // callback functions from the HTML filter fields/dropdowns
     window.changeTitle = function(newFilter) {
         filter.title = newFilter;
-        updateChart(chart, chartData, datasets, filter);
+        updateChart(chart, datasets, filter);
     }
 
     window.changeLocation = function(newFilter) {
-        filter.locationId = newFilter;
-/*        if (newFilter == -1) {
-            filter.location = filter.locationAll;
-        } else {
-            filter.location = locationData.find((data) => data.id == newFilter).name;
-        }
-*/
-        updateChart(chart, chartData, datasets, filter);
+        filter.location = newFilter;
+        updateChart(chart, datasets, filter);
     }
 
     window.changeCategory = function(newFilter) {
-        filter.categoryIdList = newFilter;
-        if (newFilter == -1) {
-/*            filter.category = filter.categoryAll;*/
-            filter.categoryIdList = [];
-        } else {
- /*           filter.category = categoryData.find((data) => data.id == newFilter).fullName; */
-            filter.categoryIdList = categoryData.find((data) => data.id == newFilter).idList;
-        }
-        updateChart(chart, chartData, datasets, filter);
+        filter.category = newFilter;
+        updateChart(chart, datasets, filter);
     }
 
     window.changePast = function(newFilter) {
-/*        filter.past = newFilter;*/
-        filter.from = new Date(); filter.from.setDate(filter.from.getDate() - newFilter);
-        updateChart(chart, chartData, datasets, filter);
+        filter.past = newFilter;
+        updateChart(chart, datasets, filter);
     }
 
     window.changeRange = function(newFilter) {
         filter.range = newFilter;
-        updateChart(chart, chartData, datasets, filter);
+        updateChart(chart, datasets, filter);
     }
 </script>

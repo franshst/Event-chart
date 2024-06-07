@@ -23,10 +23,5 @@ JFactory::getLanguage()->load('mod_eventchart', JPATH_SITE);
 $eventData = EventChartHelper::getEventData();
 $locationData = EventChartHelper::getLocationData();
 $categoryData = EventChartHelper::getCategoryData();
-$categoryData2 = EventChartHelper::getCategoryData2();
-$categoryDropDowndata = EventChartHelper::getEventCategoriesDropdownData();
-
-//echo ($params->get('range','dumdumdum') . '<br/><br/>');
-//echo 'All params: <pre>' . print_r($params->toArray(), true) . '</pre>';
 
 require ModuleHelper::getLayoutPath('mod_eventchart', $params->get('layout', 'default'));

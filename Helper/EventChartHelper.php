@@ -27,6 +27,7 @@ class EventChartHelper
      * @access public
      */
  
+    // Enrich the event list with calculated data and a list of categories
     public static function getEventData() {
 
         $events = self::getEvents();
@@ -141,163 +142,53 @@ class EventChartHelper
     public static function getLocationData() {
         $db = Factory::getContainer()->get('DatabaseDriver');
         $query = $db->getQuery(true)
-            ->select($db->quoteName(['id','name']))
+            ->select($db->quoteName(['id','name','name'],[null,null,'sort']))
             ->from($db->quoteName('#__eb_locations',''));
-
+        $allrow = $db->getQuery(true)
+            ->select([0, "'".text::_('MOD_EVENTCHART_ALL')."'", "' '"]);
+        $query = $query->union($allrow)->order($db->quoteName('sort'));
         $db->setQuery($query);
-        return $db->loadAssocList();
+        $results = $db->loadObjectList();
+        foreach ($results as $loc) {
+            $loc->name = html_entity_decode($loc->name, ENT_NOQUOTES|ENT_SUBSTITUTE);
+        }
+        return $results;
     }
 
-    public static function getEventCategoryData2() {
+    // Get categories, construct the fullname by prepending parent name, construct name by prepending dashes according to depth in the hiearchy
+    public static function getCategoryData() {
         $db = Factory::getContainer()->get('DatabaseDriver');
-        $query = $db->getQuery(true)
-            ->select($db->quoteName(['id','name','parent']))
-            ->from($db->quoteName('#__eb_categories'));
-
-        $db->setQuery($query);
-        return $db->loadAssocList();
-    }
-
-    public static function getEventCategoriesDropdownData() {
-        $db = Factory::getContainer()->get('DatabaseDriver');
+        $allText = Text::_('MOD_EVENTCHART_ALL');
         $query = "
-            WITH RECURSIVE `categories` (`prefix`, `name`, `fullname`, `id`) AS (
-                SELECT CAST('' AS CHAR(20)) AS `prefix`, `name`, `name` AS `fullname`, `id` FROM `#__eb_categories`
+            WITH RECURSIVE `categories` (`prefix`, `name`, `fullname`, `id`, `parent`) AS (
+                SELECT CAST('' AS CHAR(20)) AS `prefix`, `name`, `name` AS `fullname`, `id`, `parent` FROM `#__eb_categories`
                     WHERE `parent` = 0
                 UNION
-                SELECT CONCAT(`categories`.`prefix`,' - '), `cat_children`.`name`, CONCAT(`categories`.`fullname`, ' - ', `cat_children`.`name`), `cat_children`.`id` 
+                SELECT CONCAT(`categories`.`prefix`,' - '), `cat_children`.`name`, CONCAT(`categories`.`fullname`, ' - ', `cat_children`.`name`), `cat_children`.`id`, `cat_children`.`parent` 
                     FROM `categories`
                 JOIN `#__eb_categories` AS `cat_children`
                     ON `categories`.`id` = `cat_children`.`parent`
             )
-            SELECT CONCAT(`prefix`,`name`) AS `name`, `id`, `fullname` FROM `categories`
+            SELECT CONCAT(`prefix`,`name`) AS `name`, `id`, `fullname`, `parent` FROM `categories`
             UNION 
-            SELECT 'MOD_EVENTCHART_ALL','0','AAAAAA'
+            SELECT '" . $allText . "','0',' ', '0'
             ORDER BY `fullname`;
         ";
+ 
         $db->setQuery($query);
         // as a numbered array, because the order is important.
-        $results = $db->loadObjectList();
-        foreach ($results as $result) {
-            // translate;
-            $result->name = Text::_($result->name);
-        }
-        // echo '<pre>' . print_r($results, true) . '</pre>';
-        return $results;
-    }
-
-    /*
-    Better query using recursive with
-
-WITH RECURSIVE `categories` (`prefix`, `name`, `fullname`, `id`) AS (
-                        SELECT CAST('' AS VARCHAR(20)) AS `prefix`, `name`, `name` AS `fullname`, `id` FROM `#__eb_categories`
-                            WHERE `parent` = 0
-                    UNION
-                        SELECT CONCAT(`categories`.`prefix`,' - '), `cat_children`.`name`, CONCAT(`categories`.`fullname`, ' - ', `cat_children`.`name`), `cat_children`.`id` 
-                            FROM `categories`
-                        JOIN `#__eb_categories` AS `cat_children`
-                            ON `categories`.`id` = `cat_children`.`parent`
-                    )
-                    SELECT CONCAT(`prefix`,`name`) AS `name`, `id`, `fullname` FROM `categories`
-                    UNION 
-                    SELECT 'MOD_EVENTCHART_ALL','0','AAAAAA'
-                    ORDER BY `fullname`;
-
-    
-    */
-
-
-    // get the category names from the database, and process the hierarchical data, so that a certain category has a list of category ids of all ancestor and child categories
-    // this is used to create a filter on categories, where an event category will match a category with its children. (ancesters are included in case an event has an ancestor category id.)
-    public static function getCategoryData() {
-        $db = Factory::getContainer()->get('DatabaseDriver');
-        $query = $db->getQuery(true)
-            ->select($db->quoteName(['id','name','parent']))
-            ->from($db->quoteName('#__eb_categories'));
-
-        $db->setQuery($query);
-        $categoryData = $db->loadAssocList();
-
-        // initialize intermediates
-        foreach($categoryData as &$cat){
-            $cat['fullName'] = $cat['name'];
-            $cat['prefixAbbr'] = '';
-            $cat['pIdList'] = [$cat['id']];
-            $cat['cIdList'] = [$cat['id']];
-            $cat['parentsDone'] = false;
-            $cat['childrenDone'] = false;
-        }
-        // process ancesters and children
-        // note, abbrname will be used for dropdown choices, idList to match events
-        foreach($categoryData as &$cat){
-            // fill intermediates
-            self::addCategoryParent($cat,$categoryData);
-            self::addCategoryChildren($cat, $categoryData);
-            // finally, construct dropdown data
-            $cat['idList'] = array_unique(array_merge($cat['pIdList'], $cat['cIdList']));
-            $cat['abbrName'] = $cat['prefixAbbr'] . $cat['name'];
-        }
-        // cleanup intermediates
-        foreach($categoryData as &$cat){
-            unset($cat['prefixAbbr']);
-            unset($cat['pIdList']);
-            unset($cat['cIdList']);
-            unset($cat['parentsDone']);
-            unset($cat['childrenDone']);
-        }
-        unset($cat);
-        usort($categoryData, function ($item1, $item2) {
-            return $item1['fullName'] <=> $item2['fullName'];
-        });
-
-        return $categoryData ;
-    }
-
-    // enrich category entry with data from parent. Parameters: category entry to be enriched, where to start searching for parent, list of categories
-    private static function addCategoryParent(&$pData,$categoryData){
-        foreach ($categoryData as $cat){
-            if ($cat['id'] == $pData['parent']) {
-                $parent = $cat;
-                if (!$parent['parentsDone']){
-                    self::addCategoryParent($parent,$categoryData); // add the other ancestors recursively first
-                }
-                $pData['fullName'] = $parent['fullName'] . ' - ' . $pData['name'];  // insert parent name before current
-                $pData['prefixAbbr'] = ' - ' . $parent['prefixAbbr'];
-                $pData['pIdList'] = array_unique(array_merge($parent['pIdList'], $pData['pIdList'])); // add id of parent to the list
-                break; // parent found, data added. no further search needed.
-            }
-        }
-        $pData['parentsDone'] = true;
-    }
-
-    // enrich category with data from children.
-    private static function addCategoryChildren(&$pData, $categoryData){
-        foreach ($categoryData as $cat){
-            if ($cat['parent'] == $pData['id']) {
-                $child = $cat;
-                if (!$child['childrenDone']){
-                    self::addCategoryChildren($child,$categoryData); // add the other ancestors recursively first
-                }
-                $pData['cIdList'] = array_unique(array_merge($child['cIdList'], $pData['cIdList'])); // add idlist of children to the list
-                // child found, but keep searching for other siblings
-            }
-        }
-        $pData['childrenDone'] = true;
+        return $db->loadObjectList();
     }
 
     // Helper functions
-     /**
-     * Convert to utf8, as there is no direct support in PHP8.2
-     *
-     *
-     * @access private
-     */
 
     // testing only, dump vars on html
     private function dump($data) {
         $out = $data;
-
+        if (is_array($out))
+            $out = implode(',', $out);
         echo $out. "<br>";
+    // ec ho '<pre>' . print_r($out, true) . '</pre>';
     }
     
 }
