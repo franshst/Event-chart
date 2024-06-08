@@ -164,13 +164,13 @@ class EventChartHelper
                 SELECT CAST('' AS CHAR(20)) AS `prefix`, `name`, `name` AS `fullname`, `id`, `parent` FROM `#__eb_categories`
                     WHERE `parent` = 0
                 UNION
-                SELECT CONCAT(`categories`.`prefix`,' - '), `cat_children`.`name`, CONCAT(`categories`.`fullname`, ' - ', `cat_children`.`name`), `cat_children`.`id`, `cat_children`.`parent` 
+                SELECT CONCAT(`categories`.`prefix`,' - '), `cat_children`.`name`, CONCAT(`categories`.`fullname`, ' - ', `cat_children`.`name`), `cat_children`.`id`, `cat_children`.`parent`
                     FROM `categories`
                 JOIN `#__eb_categories` AS `cat_children`
                     ON `categories`.`id` = `cat_children`.`parent`
             )
             SELECT CONCAT(`prefix`,`name`) AS `name`, `id`, `fullname`, `parent` FROM `categories`
-            UNION 
+            UNION
             SELECT '" . $allText . "','0',' ', '0'
             ORDER BY `fullname`;
         ";

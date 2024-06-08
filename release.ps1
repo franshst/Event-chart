@@ -17,10 +17,10 @@ New-Item -ItemType Directory -Path $tempFolder
 Copy-Item -Path "tmpl" -Destination "$tempFolder\tmpl" -Recurse
 Copy-Item -Path "language" -Destination "$tempFolder\language" -Recurse
 Copy-Item -Path "Helper" -Destination "$tempFolder\Helper" -Recurse
+Copy-Item -Path "js" -Destination "$tempFolder\js" -Recurse
 
 # Copy individual files to the temporary folder
 Copy-Item -Path "LICENSE" -Destination $tempFolder
-Copy-Item -Path "*.html" -Destination $tempFolder
 Copy-Item -Path "*.php" -Destination $tempFolder
 Copy-Item -Path "*mod_eventchart.xml" -Destination $tempFolder
 
