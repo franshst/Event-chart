@@ -24,7 +24,6 @@ echo 'var categoryData = ' . json_encode($categoryData) . ';';
 echo 'var params = ' . json_encode($params->toArray()) . ';';
 
 // TODO
-// better form fields, smaller, label above
 // Multi-lingual
 // Separate js file
 // Minify js file
@@ -35,7 +34,7 @@ echo 'var params = ' . json_encode($params->toArray()) . ';';
 echo '</script>';
 ?>
 
-<div id="fsECFilters">
+<div id="fsECFilters" class="container form-control-sm">
     <div class="form-group form-row">
         <div class="col-auto">
             <input type="text" id="fsECtitle" placeholder="Filter event title" class="form-control form-control-sm col-sm-2" oninput="changeTitle(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></input>
@@ -43,15 +42,19 @@ echo '</script>';
     </div>
     <div class="form-group row">
         <div class="col-auto">
+            <label for="fsECloc" class="form-label">Location</label>
             <select id="fsECloc" class="form-select form-select-sm col-sm-2" oninput="changeLocation(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></select>
         </div>
         <div class="col-auto">
+            <label for="fsECcat" class="form-label">Category</label>
             <select id="fsECcat" class="form-select form-select-sm col-sm-2" oninput="changeCategory(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></select>
         </div>
         <div class="col-auto">
+            <label for="fsECpast" class="form-label">Include past events (months)</label>
             <input id="fsECpast" type="number" min="0" class="form-control form-control-sm mcol-sm-2" oninput="changePast(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></input>
         </div>
         <div class="col-auto">
+            <label for="fsECrange" class="form-label">Horizontal range (weeks)</label>
             <input id="fsECrange" type="number" min="0" class="form-control form-control-sm col-sm-2" oninput="changeRange(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></input>
         </div>
     </div>
@@ -115,7 +118,7 @@ echo '</script>';
             ((filter.location == 0) || (event.locationId == filter.location)) &&
             matchIdListCategory(event.categoryIdList, filter.category) &&
             (filter.past == 0 || event.eventDate >= fromDate) &&
-            (filter.range == 0 || event.lastRegistration <= filter.range)
+            (filter.range == 0 || (event.lastRegistration/weeks) <= filter.range)
         );
     }
 
@@ -153,10 +156,11 @@ echo '</script>';
     }
 
     // populate the chartjs datasets, from eventData, with filters
+    // display the chart
     // uses global eventData
-    function loadData(datasets, filter) {
-        console.log('loadData');
-        console.log(filter);
+    function loadData(chart, datasets, filter) {
+        datasets = []; // new datasets
+        //load data
         for (let eventId in eventData) {
             if (filterEvent(eventData[eventId], filter)) {
                 datasets.push({
@@ -174,14 +178,10 @@ echo '</script>';
                 });
             }
         }
-    }
-
-    // update the chart
-    // uses global eventData
-    function updateChart(chart, datasets, filter) {
-        datasets = []; // new datasets
-        loadData(datasets, filter);
+        //glue to chart
         chart.data.datasets = datasets;
+
+        // some amendments of the display, according to current filter
         let xMax = (filter.range == 0 ? firstSale(filter) : Math.min(filter.range, firstSale(filter)));
         chart.options.scales.x.max = xMax;
         // subdivide by days when zoomed in
@@ -208,44 +208,36 @@ echo '</script>';
     // extend graph to event date or today
     insertExtraDatapoint();
 
-    // set defaults if not set on module parameter page.(!is_set(params.title) params.title = ''; // all titles
-    params.title = params.title ?? '';
-    params.location = params.location ?? 0;
-    params.category = params.category ?? 0;
-    params.range = params.range ?? 6;
-    params.past = params.past ?? 6;
+    //  Calculate initial filters
+    var filter = {
+        title: params.title ?? '',
+        location: params.location ?? 0,
+        category: params.category ?? 0,
+        range: params.range ?? 6,
+        past: params.past ?? 6
+    };
 
     // populate filter fields in html
-    document.getElementById("fsECtitle").value = params.title;
+    {
+        document.getElementById("fsECtitle").value = filter.title;
 
-    var locationDropdown = document.getElementById("fsECloc");
-    for (var id in locationData){
-        addOption(locationDropdown,locationData[id].name,locationData[id].id,locationData[id].id == params.location)
+        var locationDropdown = document.getElementById("fsECloc");
+        for (var id in locationData){
+            addOption(locationDropdown,locationData[id].name,locationData[id].id,locationData[id].id == filter.location)
+        }
+
+        var categoryDropdown = document.getElementById("fsECcat");
+        for (var c of categoryData) {
+            addOption(categoryDropdown,c.name,c.id,c.id == filter.category)
+        }
+
+        document.getElementById("fsECrange").value = filter.range;
+        document.getElementById("fsECpast").value = filter.past;
     }
-
-    var categoryDropdown = document.getElementById("fsECcat");
-    for (var c of categoryData) {
-        addOption(categoryDropdown,c.name,c.id,c.id == params.category)
-    }
-
-    document.getElementById("fsECrange").value = params.range;
-    document.getElementById("fsECpast").value = params.past;
-
-    //  Calculate initial filters
-    var filter = {};
-
-    filter.title = params.title;
-    filter.location = params.location;
-    filter.category = params.category;
-    filter.range = params.range;
-    filter.past = params.past;
-
-    // load data into chart
+    // create empty dataset
     var datasets = [];
-    loadData(datasets, filter);
 
     // create chart
-    // TODO x axis labels in weeks, days minor ticks
     let ctx = document.getElementById('fsECchart').getContext('2d');
     var chart = new Chart(ctx, {
         type: 'line',
@@ -253,6 +245,14 @@ echo '</script>';
             datasets: datasets
         },
         options: {
+            datasets: {
+                line: {
+                    borderWidth: 1
+                },
+                point: {
+                    radius: 2
+                }
+            },
             scales: {
                 x: {
                     type: 'linear',
@@ -285,35 +285,57 @@ echo '</script>';
             plugins: {
                 legend: {
                     display: true,
-                    position: 'top'
+                    position: 'top',
+                    align: 'start',
+                    onClick: function(e, legendItem) {
+                        var index = legendItem.datasetIndex;
+                        var ci = this.chart;
+
+                        // Check if the dataset is already highlighted
+                        var currentWidth = ci.data.datasets[index].borderWidth;
+                        var newWidth = currentWidth === 3 ? 1 : 3; // Toggle between 1 and 3
+
+                        // Reset all dataset line widths to default
+                        ci.data.datasets.forEach(function(dataset, i) {
+                            dataset.borderWidth = 1;
+                        });
+
+                        // Set the clicked dataset to the new width
+                        ci.data.datasets[index].borderWidth = newWidth;
+
+                        ci.update();
+                    }
                 }
             }
         }
     });
 
+    // fill dataset and display
+    loadData(chart,datasets,filter);
+
     // callback functions from the HTML filter fields/dropdowns
     window.changeTitle = function(newFilter) {
         filter.title = newFilter;
-        updateChart(chart, datasets, filter);
+        loadData(chart, datasets, filter);
     }
 
     window.changeLocation = function(newFilter) {
         filter.location = newFilter;
-        updateChart(chart, datasets, filter);
+        loadData(chart, datasets, filter);
     }
 
     window.changeCategory = function(newFilter) {
         filter.category = newFilter;
-        updateChart(chart, datasets, filter);
+        loadData(chart, datasets, filter);
     }
 
     window.changePast = function(newFilter) {
         filter.past = newFilter;
-        updateChart(chart, datasets, filter);
+        loadData(chart, datasets, filter);
     }
 
     window.changeRange = function(newFilter) {
         filter.range = newFilter;
-        updateChart(chart, datasets, filter);
+        loadData(chart, datasets, filter);
     }
 </script>
