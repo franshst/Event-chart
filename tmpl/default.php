@@ -24,8 +24,7 @@ echo 'var categoryData = ' . json_encode($categoryData) . ';';
 echo 'var params = ' . json_encode($params->toArray()) . ';';
 
 // TODO
-// refactor category filter
-// Use defaults
+// better form fields, smaller, label above
 // Multi-lingual
 // Separate js file
 // Minify js file
@@ -116,7 +115,7 @@ echo '</script>';
             ((filter.location == 0) || (event.locationId == filter.location)) &&
             matchIdListCategory(event.categoryIdList, filter.category) &&
             (filter.past == 0 || event.eventDate >= fromDate) &&
-            (filter.range == 0 || event.lastRegistration <= filter.range*weeks)
+            (filter.range == 0 || event.lastRegistration <= filter.range)
         );
     }
 
@@ -165,7 +164,7 @@ echo '</script>';
                     order: 0 - eventData[eventId].eventDate,
                     data: eventData[eventId].registrations.map((row) => (
                         {
-                            x: row.daysBeforeEvent,
+                            x: row.daysBeforeEvent / weeks,
                             y: row.cumRegistrants
                         }
                         )),
@@ -183,7 +182,14 @@ echo '</script>';
         datasets = []; // new datasets
         loadData(datasets, filter);
         chart.data.datasets = datasets;
-        chart.options.scales.x.max = (filter.range == 0 ? firstSale(filter) : Math.min(filter.range*weeks, firstSale(filter)));
+        let xMax = (filter.range == 0 ? firstSale(filter) : Math.min(filter.range, firstSale(filter)));
+        chart.options.scales.x.max = xMax;
+        // subdivide by days when zoomed in
+        if (xMax <= 6) {
+            chart.options.scales.x.ticks.stepSize = 1 / 7; // Daily ticks (1 week / 7 days)
+        } else {
+            chart.options.scales.x.ticks.stepSize = 1; // Weekly ticks
+        }
         chart.update();
     }
 
@@ -251,11 +257,20 @@ echo '</script>';
                 x: {
                     type: 'linear',
                     reverse: true,
-                    max: filter.range == 0 ? firstsale(filter) : Math.min(filter.range*weeks, firstSale(filter)),
+                    max: filter.range == 0 ? firstsale(filter) : Math.min(filter.range, firstSale(filter)),
                     position: 'bottom',
+                    ticks: {
+                        callback: function(value, index, values) {
+                            if (Math.round(value) == value) {
+                                return '' + Math.round(value); // tick marks only on integer values (weeks), not on days.
+                            } else {
+                                return '';
+                            }
+                        }
+                    },
                     title: {
                         display: true,
-                        text: 'Days before event'
+                        text: 'Weeks before event'
                     }
                 },
                 y: {
