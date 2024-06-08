@@ -24,6 +24,7 @@ echo 'var categoryData = ' . json_encode($categoryData) . ';';
 echo 'var params = ' . json_encode($params->toArray()) . ';';
 
 // TODO
+// Tooltip, display eventname, date of sale, day of week, cum tickets
 // Multi-lingual
 // Separate js file
 // Minify js file
@@ -107,7 +108,6 @@ echo '</script>';
         return false; // if category is not found, return false. Should never happen.
     }
 
-
     // returns true if event is included in the chart
     function filterEvent(event, filter){
         // include events in this date range
@@ -169,7 +169,8 @@ echo '</script>';
                     data: eventData[eventId].registrations.map((row) => (
                         {
                             x: row.daysBeforeEvent / weeks,
-                            y: row.cumRegistrants
+                            y: row.cumRegistrants,
+                            date: row.registerDate
                         }
                         )),
                     borderColor: '#' + Math.floor(Math.random()*16777215).toString(16), // Random color
@@ -304,6 +305,40 @@ echo '</script>';
                         ci.data.datasets[index].borderWidth = newWidth;
 
                         ci.update();
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        title: function(context) {
+                            let con = context[0];
+                            const dataPoint = con.raw;
+                            const label = con.dataset.label;
+                            const xValue = dataPoint.x;
+                            const yValue = dataPoint.y;
+                            const date = dataPoint.date;
+
+                            return label;
+                        },
+                        label: function(context) {
+                            let con = context;
+                            const dataPoint = con.raw;
+                            const label = con.dataset.label;
+                            const xValue = dataPoint.x;
+                            const yValue = dataPoint.y;
+                            const date = dataPoint.date;
+
+                            const options = { weekday: 'long'};
+                            const userLocale =
+                                navigator.languages && navigator.languages.length
+                                    ? navigator.languages[0]
+                                    : navigator.language;
+                            let dateDisplay = date.toLocaleDateString(userLocale,options) + ' ' + date.toLocaleDateString(userLocale);
+                            let xDisplay = Math.floor(xValue * 7) + ' days before event';
+                            let yDisplay = yValue + ' registrations';
+
+
+                            return [dateDisplay,xDisplay,yDisplay];
+                        }
                     }
                 }
             }
