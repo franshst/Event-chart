@@ -30,8 +30,9 @@ JText::script('MOD_EVENTCHART_TOOLTIP_DAYS_BEFORE');
 
 //add javascript
 $wa = $app->getDocument()->getWebAssetManager();
+$scriptUrl = 'modules/mod_eventchart/js/mod_eventchart.min.js?v=' . filemtime(JPATH_BASE . '/modules/mod_eventchart/js/mod_eventchart.min.js');
 //$wa->registerAndUseScript('mod_eventchart.script','modules/mod_eventchart/js/mod_eventchart.js', [], ['defer' => true,'type' => 'module'], ['core']);
-$wa->registerAndUseScript('mod_eventchart.script','modules/mod_eventchart/js/mod_eventchart.min.js', [], ['defer' => true,'type' => 'module'], ['core']);
+$wa->registerAndUseScript('mod_eventchart.min.script',$scriptUrl, [], ['defer' => true,'type' => 'module'], ['core']);
 // Add CSS (if any)
 // $wa->registerAndUseStyle('mod_example.style', 'media/mod_example/css/style.css');
 
@@ -46,10 +47,5 @@ echo '</script>';
 // Load the HTML file
 require_once __DIR__ . '/default.html.php';
 
-
 // TODO
-// Multi-lingual
-// Minify js file
-// checksum of zip file
-// js file with registerScript ??
 // check gebruik van filter en datasets in de javascript
