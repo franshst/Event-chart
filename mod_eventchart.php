@@ -19,6 +19,7 @@ defined('_JEXEC') or die;
 use Joomla\CMS\Helper\ModuleHelper;
 use EventChartNamespace\Module\EventChart\Site\Helper\EventChartHelper;
 
+JFactory::getLanguage()->load('mod_eventchart', JPATH_SITE);
 $eventData = EventChartHelper::getEventData();
 $locationData = EventChartHelper::getLocationData();
 $categoryData = EventChartHelper::getCategoryData();
