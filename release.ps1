@@ -1,3 +1,26 @@
+# create a release zip file
+# to be installed on your windows: 7-zip, node.js, npm install uglifyjs
+
+# Set the path to the directory containing the .js files
+$directoryPath = "js"
+
+# Remove all existing .min.js files in the directory
+Get-ChildItem -Path $directoryPath -Filter *.min.js | ForEach-Object {
+    Remove-Item $_.FullName
+}
+
+# Loop through each .js file in the directory
+Get-ChildItem -Path $directoryPath -Filter *.js | ForEach-Object {
+    # Get the full path of the current .js file
+    $inputFile = $_.FullName
+
+    # Create the output file path by replacing .js with .min.js
+    $outputFile = [System.IO.Path]::ChangeExtension($inputFile, ".min.js")
+
+    # Execute uglifyjs to compress the file
+    uglifyjs $inputFile -o $outputFile
+}
+
 # Define the destination ZIP file
 $zipFile = "mod_eventchart.zip"
 

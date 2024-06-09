@@ -1,5 +1,7 @@
     import {Chart, LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Legend, Tooltip} from 'https://cdn.skypack.dev/chart.js';
     Chart.register(LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Legend, Tooltip);
+    //let test = Joomla.JText._('MOD_EVENTCHART_X_LABEL');
+    //console.log(test);
 
     const weeks = 7;
     const months = 365/12;
@@ -48,14 +50,14 @@
     // returns true if event is included in the chart
     function filterEvent(event, filter){
         // include events in this date range
-        let fromDate = new Date(); fromDate.setDate(fromDate.getDate() - filter.past*months);
+        let fromDate = new Date(); fromDate.setDate(fromDate.getDate() - filter.past*months); //past is in months
         //toDate = new Date(); toDate.setDate(toDate.getDate() + filter.range);
         return(
             (filter.title === '' || event.title.toUpperCase().includes(filter.title.toUpperCase())) &&
             ((filter.location == 0) || (event.locationId == filter.location)) &&
             matchIdListCategory(event.categoryIdList, filter.category) &&
             (filter.past == 0 || event.eventDate >= fromDate) &&
-            (filter.range == 0 || (event.lastRegistration/weeks) <= filter.range)
+            (filter.range == 0 || (event.lastRegistration) <= filter.range*weeks) //range is in weeks
         );
     }
 
@@ -120,7 +122,7 @@
         chart.data.datasets = datasets;
 
         // some amendments of the display, according to current filter
-        let xMax = (filter.range == 0 ? firstSale(filter) : Math.min(filter.range, firstSale(filter)));
+        let xMax = (filter.range == 0 ? firstSale(filter)/weeks : Math.min(filter.range, firstSale(filter)/weeks)); //firstsale is in days, range and x is in weeks
         chart.options.scales.x.max = xMax;
         // subdivide by days when zoomed in
         if (xMax <= 6) {
@@ -156,22 +158,22 @@
     };
 
     // populate filter fields in html
-    {
+    
         document.getElementById("fsECtitle").value = filter.title;
 
-        var locationDropdown = document.getElementById("fsECloc");
-        for (var id in locationData){
-            addOption(locationDropdown,locationData[id].name,locationData[id].id,locationData[id].id == filter.location)
+        let locationDropdown = document.getElementById("fsECloc");
+        for (let l of locationData){
+            addOption(locationDropdown,l.name,l.id,l.id == filter.location)
         }
 
-        var categoryDropdown = document.getElementById("fsECcat");
-        for (var c of categoryData) {
+        let categoryDropdown = document.getElementById("fsECcat");
+        for (let c of categoryData) {
             addOption(categoryDropdown,c.name,c.id,c.id == filter.category)
         }
 
         document.getElementById("fsECrange").value = filter.range;
         document.getElementById("fsECpast").value = filter.past;
-    }
+    
     // create empty dataset
     var datasets = [];
 
@@ -208,7 +210,7 @@
                     },
                     title: {
                         display: true,
-                        text: 'Weeks before event'
+                        text: Joomla.JText._('MOD_EVENTCHART_X_LABEL')
                     }
                 },
                 y: {
@@ -216,7 +218,7 @@
                     position: 'left',
                     title: {
                         display: true,
-                        text: 'Tickets sold'
+                        text: Joomla.JText._('MOD_EVENTCHART_Y_LABEL')
                     }
                 }
             },
@@ -226,12 +228,12 @@
                     position: 'top',
                     align: 'start',
                     onClick: function(e, legendItem) {
-                        var index = legendItem.datasetIndex;
-                        var ci = this.chart;
+                        let index = legendItem.datasetIndex;
+                        let ci = this.chart;
 
                         // Check if the dataset is already highlighted
-                        var currentWidth = ci.data.datasets[index].borderWidth;
-                        var newWidth = currentWidth === 3 ? 1 : 3; // Toggle between 1 and 3
+                        let currentWidth = ci.data.datasets[index].borderWidth;
+                        let newWidth = currentWidth === 3 ? 1 : 3; // Toggle between 1 and 3
 
                         // Reset all dataset line widths to default
                         ci.data.datasets.forEach(function(dataset, i) {
@@ -248,18 +250,12 @@
                     callbacks: {
                         title: function(context) {
                             let con = context[0];
-                            const dataPoint = con.raw;
                             const label = con.dataset.label;
-                            const xValue = dataPoint.x;
-                            const yValue = dataPoint.y;
-                            const date = dataPoint.date;
-
                             return label;
                         },
                         label: function(context) {
                             let con = context;
                             const dataPoint = con.raw;
-                            const label = con.dataset.label;
                             const xValue = dataPoint.x;
                             const yValue = dataPoint.y;
                             const date = dataPoint.date;
@@ -270,8 +266,8 @@
                                     ? navigator.languages[0]
                                     : navigator.language;
                             let dateDisplay = date.toLocaleDateString(userLocale,options) + ' ' + date.toLocaleDateString(userLocale);
-                            let xDisplay = Math.floor(xValue * 7) + ' days before event';
-                            let yDisplay = yValue + ' registrations';
+                            let xDisplay = Math.floor(xValue * 7) + ' ' + Joomla.JText._('MOD_EVENTCHART_TOOLTIP_DAYS_BEFORE');
+                            let yDisplay = yValue + ' ' + Joomla.JText._('MOD_EVENTCHART_TOOLTIP_REGISTRATIONS');
 
 
                             return [dateDisplay,xDisplay,yDisplay];

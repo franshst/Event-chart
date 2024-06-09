@@ -15,10 +15,25 @@
 // No direct access
 defined('_JEXEC') or die;
 
-//add javascript, does not work. Gives dependency error.
-//$wa = $app->getDocument()->getWebAssetManager();
-//$wa->registerScript('mod_eventchart.script', 'modules/mod_eventchart/js/mod_eventchart.js', [], [], ['type' => 'module']);
-//$wa->useScript('mod_eventchart.script');
+// Load the core Joomla behaviors
+JHtml::_('behavior.core');
+
+// Load language file
+$lang = JFactory::getLanguage();
+$lang->load('mod_eventchart', __DIR__);
+
+// Add JavaScript language strings
+JText::script('MOD_EVENTCHART_X_LABEL');
+JText::script('MOD_EVENTCHART_Y_LABEL');
+JText::script('MOD_EVENTCHART_TOOLTIP_REGISTRATIONS');
+JText::script('MOD_EVENTCHART_TOOLTIP_DAYS_BEFORE');
+
+//add javascript
+$wa = $app->getDocument()->getWebAssetManager();
+//$wa->registerAndUseScript('mod_eventchart.script','modules/mod_eventchart/js/mod_eventchart.js', [], ['defer' => true,'type' => 'module'], ['core']);
+$wa->registerAndUseScript('mod_eventchart.script','modules/mod_eventchart/js/mod_eventchart.min.js', [], ['defer' => true,'type' => 'module'], ['core']);
+// Add CSS (if any)
+// $wa->registerAndUseStyle('mod_example.style', 'media/mod_example/css/style.css');
 
 echo '<script>';
 // export php data to javascript
@@ -31,14 +46,10 @@ echo '</script>';
 // Load the HTML file
 require_once __DIR__ . '/default.html.php';
 
-//add javascript old fashioned way
-echo '<script type="module" src="' . JURI::base() . 'modules/mod_eventchart/js/mod_eventchart.js"></script>';
-
-// Add CSS (if any)
-// $wa->registerAndUseStyle('mod_example.style', 'media/mod_example/css/style.css');
 
 // TODO
 // Multi-lingual
-// js file with registerScript ??
 // Minify js file
 // checksum of zip file
+// js file with registerScript ??
+// check gebruik van filter en datasets in de javascript
