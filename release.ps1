@@ -1,4 +1,11 @@
 # create a release zip file
+
+# @package    Event Chart
+#
+# @author     Frans Stuurman
+# @copyright  Frans Stuurman
+# @license    MIT see LICENSE
+
 # minifies js
 # create installation zip
 # adds checksum to update xml

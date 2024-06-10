@@ -1,17 +1,14 @@
 <?php
-
 /**
+ * Main driver of Event Chart module
+ *
  * @package    Event Chart
  *
  * @author     Frans Stuurman
  * @copyright  Frans Stuurman
  * @license    MIT see LICENSE
- * @link
+ *
  */
-
-/* task of this file
-    Main driver of Event Chart module
-*/
 
 // No direct access
 defined('_JEXEC') or die;

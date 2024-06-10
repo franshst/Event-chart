@@ -1,6 +1,6 @@
 <updates>
   <update>
-    <name>mod_eventchart</name>
+    <name>Event Chart</name>
     <description>Module to display a line chart of event bookings.</description>
     <element>mod_eventchart</element>
     <type>module</type>
@@ -16,7 +16,6 @@
     <targetplatform name="joomla" version="4.*" />
     <!-- php_minimum>8.0</php_minimum -->
     <client>site</client>
-    <!-- sha256>1B54AE230ECBDAC2CD9CDEDD92EE1541B03ED8A3E4AC48AEC3656E40985D7A81</sha256 -->
-    <sha256>AE26C0375BC9585CEF958E8CD684BD0DB45C37A58EFEEF237DE9698992581B22</sha256>
+    <sha256>4F81601335F1A11F4BD8792579A836D6F450E5752C66639CB82E824D51860005</sha256>
   </update>
 </updates>

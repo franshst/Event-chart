@@ -1,34 +1,70 @@
-
 <?php
-// mod_example/tmpl/default.html.php
+/**
+ * Defines the HTML to display the chart
+ *
+ * @package    Event Chart
+ *
+ * @author     Frans Stuurman
+ * @copyright  Frans Stuurman
+ * @license    MIT see LICENSE
+ *
+ */
+
 defined('_JEXEC') or die;
 use Joomla\CMS\Language\Text;
 
 ?>
 
-<div id="fsECFilters" class="container form-control-sm">
-    <div class="form-group form-row">
-        <div class="col-auto">
-            <input type="text" id="fsECtitle" placeholder="<?php echo text::_('MOD_EVENTCHART_FILTER_TITLE') ?>" class="form-control form-control-sm col-sm-2" oninput="changeTitle(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></input>
-        </div>
-    </div>
+<style>
+    .fsec-field-format {
+        width: 10rem !important;
+        font-size: 0.75rem;
+        padding-right: 0.25rem !important;
+        padding-left: 0.25rem;
+    }
+    .fsec-gutter {
+        padding-right: 0.25rem !important;
+        padding-left: 0.25rem;
+    }
+    .fsec-chart-container {
+        position: relative;
+        width: 100%;
+        padding-top: 85%;
+    }
+
+    .fsec-chart {
+        position: relative;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+</style>
+
+<div id="fsECFilters" class="container">
     <div class="form-group row">
-        <div class="col-auto">
-            <label for="fsECloc" class="form-label"><?php echo text::_('MOD_EVENTCHART_FILTER_LOCATION') ?></label>
-            <select id="fsECloc" class="form-select form-select-sm col-sm-2" oninput="changeLocation(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></select>
+        <div class="col-auto fsec-gutter">
+            <label for="fsECloc" class="form-label fsec-field-format"><?php echo text::_('MOD_EVENTCHART_FILTER_TITLE') ?></label>
+            <input type="text" id="fsECtitle" class="form-control form-control-sm fsec-field-format" oninput="changeTitle(this.value)"></input>
         </div>
-        <div class="col-auto">
-            <label for="fsECcat" class="form-label"><?php echo text::_('MOD_EVENTCHART_FILTER_CATEGORY') ?></label>
-            <select id="fsECcat" class="form-select form-select-sm col-sm-2" oninput="changeCategory(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></select>
+        <div class="col-auto fsec-gutter">
+            <label for="fsECloc" class="form-label fsec-field-format"><?php echo text::_('MOD_EVENTCHART_FILTER_LOCATION') ?></label>
+            <select id="fsECloc" class="form-select form-select-sm -2 fsec-field-format" oninput="changeLocation(this.value)"></select>
         </div>
-        <div class="col-auto">
-            <label for="fsECpast" class="form-label"><?php echo text::_('MOD_EVENTCHART_FILTER_PAST') ?></label>
-            <input id="fsECpast" type="number" min="0" class="form-control form-control-sm mcol-sm-2" oninput="changePast(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></input>
+        <div class="col-auto fsec-gutter">
+            <label for="fsECcat" class="form-label fsec-field-format"><?php echo text::_('MOD_EVENTCHART_FILTER_CATEGORY') ?></label>
+            <select id="fsECcat" class="form-select form-select-sm fsec-field-format" oninput="changeCategory(this.value)"></select>
         </div>
-        <div class="col-auto">
-            <label for="fsECrange" class="form-label"><?php echo text::_('MOD_EVENTCHART_FILTER_RANGE') ?></label>
-            <input id="fsECrange" type="number" min="0" class="form-control form-control-sm col-sm-2" oninput="changeRange(this.value)" style="width: 15em !important; min-width: 15em; max-width: 15em;"></input>
+        <div class="col-auto fsec-gutter">
+            <label for="fsECpast" class="form-label fsec-field-format"><?php echo text::_('MOD_EVENTCHART_FILTER_PAST') ?></label>
+            <input id="fsECpast" type="number" min="0" class="form-control form-control-sm fsec-field-format" oninput="changePast(this.value)"></input>
+        </div>
+        <div class="col-auto fsec-gutter">
+            <label for="fsECrange" class="form-label fsec-field-format"><?php echo text::_('MOD_EVENTCHART_FILTER_RANGE') ?></label>
+            <input id="fsECrange" type="number" min="0" class="form-control form-control-sm fsec-field-format" oninput="changeRange(this.value)"></input>
         </div>
     </div>
 </div>
-<canvas id="fsECchart" width="800" height="600"></canvas>
+<div class="fsec-chart">
+    <canvas id="fsECchart" class="fsec-chart"></canvas>
+</div>
