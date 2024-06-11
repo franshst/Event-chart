@@ -29,7 +29,7 @@ use Joomla\CMS\Language\Text;
     .fsec-chart-container {
         position: relative;
         width: 100%;
-        padding-top: 85%;
+        padding-top: 100%;
     }
 
     .fsec-chart {

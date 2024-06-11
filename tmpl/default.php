@@ -28,8 +28,10 @@ JText::script('MOD_EVENTCHART_TOOLTIP_DAYS_BEFORE');
 
 //add javascript
 $wa = $app->getDocument()->getWebAssetManager();
-$scriptUrl = 'modules/mod_eventchart/js/mod_eventchart.min.js?v=' . filemtime(JPATH_BASE . '/modules/mod_eventchart/js/mod_eventchart.min.js');
-$wa->registerAndUseScript('mod_eventchart.min.script',$scriptUrl, [], ['defer' => true,'type' => 'module'], ['core']);
+$minified = true; //set to false when debugging
+if ($minified) { $infix = '.min';} else {$infix = '';}
+$scriptUrl = 'modules/mod_eventchart/js/mod_eventchart' . $infix . '.js?v=' . filemtime(JPATH_BASE . '/modules/mod_eventchart/js/mod_eventchart' . $infix . '.js');
+$wa->registerAndUseScript('mod_eventchart' . $infix . 'script',$scriptUrl, [], ['defer' => true,'type' => 'module'], ['core']);
 
 echo '<script>';
 // export php data to javascript

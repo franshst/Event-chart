@@ -117,23 +117,29 @@ function insertExtraDatapoint() {
 // uses global eventData
 function loadData(chart,filter) {
     let datasets = []; // new datasets
+    const colors = [
+        '#e6194B', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#42d4f4', '#f032e6', '#bfef45', '#fabebe',
+        '#469990', '#e6beff', '#9A6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#a9a9a9'
+      ];
     //load data
-    for (let eventId in eventData) {
-        if (filterEvent(eventData[eventId], filter)) {
+    let colorindex = 0;
+    for (let event of eventData) {
+        if (filterEvent(event, filter)) {
             datasets.push({
-                label: eventData[eventId].title,
-                order: 0 - eventData[eventId].eventDate,
-                data: eventData[eventId].registrations.map((row) => (
+                label: event.title,
+                order: 0 - event.eventDate,
+                data: event.registrations.map((row) => (
                     {
                         x: row.daysBeforeEvent / weeks,
                         y: row.cumRegistrants,
                         date: row.registerDate
                     }
                     )),
-                borderColor: '#' + Math.floor(Math.random()*16777215).toString(16), // Random color
+                borderColor: colors[colorindex%20],              //'#' + Math.floor(Math.random()*16777215).toString(16), // Random color
                 fill: false,
                 showLine: true, // Ensures lines are drawn between points
             });
+            colorindex++; 
         }
     }
     //glue to chart
