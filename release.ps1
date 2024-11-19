@@ -119,3 +119,5 @@ if ($updateNode.sha256) {
 $xml.Save($updateXml)
 
 Write-Output "Updated XML file with checksum."
+
+Read-Host -Prompt "Press any key to continue..."
