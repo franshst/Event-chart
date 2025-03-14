@@ -16,7 +16,7 @@
  * 
  */
 
-import {Chart, LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Legend, Tooltip} from 'https://cdn.skypack.dev/chart.js';
+import {Chart, LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Legend, Tooltip} from 'https://cdn.skypack.dev/chart.js@3.9.1';
 Chart.register(LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Legend, Tooltip);
 
 // constants to convert between days (registration time before start of event), x range of the chart (in weeks), and to select past events (in months)
