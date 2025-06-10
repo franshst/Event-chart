@@ -3,7 +3,7 @@
     <name>mod_eventchart</name>
     <author>Frans Stuurman</author>
     <copyright>(c) Frans Stuurman 2024</copyright>
-    <licence>MIT</licence>
+    <license>MIT</license>
     <version>0.0.19</version>
     <description>Module to display a line chart of event bookings.</description>
     <updateservers>
