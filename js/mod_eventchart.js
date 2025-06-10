@@ -14,10 +14,19 @@
  * @param params Joomla module params as list
  * @see default.html.php Expects appropriate form fields to be available in the HTML
  * 
+ * @TODO add filter reset button
+ * 
  */
 
 import {Chart, LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Legend, Tooltip} from 'https://cdn.skypack.dev/chart.js@3.9.1';
 Chart.register(LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Legend, Tooltip);
+
+// Ensure required globals are defined (for Joomla module context)
+if (typeof eventData === 'undefined') window.eventData = [];
+if (typeof locationData === 'undefined') window.locationData = [];
+if (typeof categoryData === 'undefined') window.categoryData = [];
+if (typeof params === 'undefined') window.params = {};
+if (typeof Joomla === 'undefined') window.Joomla = { JText: { _: (x) => x } };
 
 // constants to convert between days (registration time before start of event), x range of the chart (in weeks), and to select past events (in months)
 const weeks = 7;
@@ -166,6 +175,12 @@ function addOption(selectbox, text, value, selected) {
     selectbox.options.add(optn);
 }
 
+// store filters in local storage
+// so that the user can return to the same filters next time
+function saveFiltersToLocalStorage(filter) {
+    localStorage.setItem('eventChartFilters', JSON.stringify(filter));
+}
+
 // convert PHP data to javascript data
 convertDates(eventData,['eventDate','registerDate','firstRegistrationDate','lastRegistrationDate']);
 
@@ -173,13 +188,33 @@ convertDates(eventData,['eventDate','registerDate','firstRegistrationDate','last
 insertExtraDatapoint();
 
 //  Calculate initial filters
-let filter = {
-    title: params.title ?? '',
-    location: params.location ?? 0,
-    category: params.category ?? 0,
-    range: params.range ?? 6,
-    past: params.past ?? 6
-};
+let savedFilters = localStorage.getItem('eventChartFilters');
+let filter;
+
+if (savedFilters) {
+    try {
+        filter = JSON.parse(savedFilters);
+    } catch(e) {
+        console.warn("Failed to parse saved filters, falling back to defaults.");
+        filter = {
+            title: params.title || '',
+            location: params.location || 0,
+            category: params.category || 0,
+            range: params.range || 6,
+            past: params.past || 6
+        };
+    }
+} else {
+    filter = {
+        title: params.title || '',
+        location: params.location || 0,
+        category: params.category || 0,
+        range: params.range || 6,
+        past: params.past || 6
+    };
+}
+
+saveFiltersToLocalStorage(filter);
 
 // populate filter fields in html
 
@@ -203,7 +238,7 @@ let filter = {
 
 // create chart
 let ctx = document.getElementById('fsECchart').getContext('2d');
-var chart = new Chart(ctx, {
+let chart = new Chart(ctx, {
     type: 'line',
     data: {
         datasets: []
@@ -231,7 +266,7 @@ var chart = new Chart(ctx, {
             x: {
                 type: 'linear',
                 reverse: true,
-                max: filter.range == 0 ? firstsale(filter) : Math.min(filter.range, firstSale(filter)),
+                max: filter.range == 0 ? firstSale(filter) : Math.min(filter.range, firstSale(filter)),
                 position: 'bottom',
                 ticks: {
                     callback: function(value, index, values) {
@@ -322,25 +357,30 @@ loadData(chart,filter);
 // callback functions from the HTML filter fields/dropdowns
 window.changeTitle = function(newFilter) {
     filter.title = newFilter;
+    saveFiltersToLocalStorage(filter);
     loadData(chart, filter);
 }
 
 window.changeLocation = function(newFilter) {
     filter.location = newFilter;
+    saveFiltersToLocalStorage(filter);
     loadData(chart, filter);
 }
 
 window.changeCategory = function(newFilter) {
     filter.category = newFilter;
+    saveFiltersToLocalStorage(filter);
     loadData(chart, filter);
 }
 
 window.changePast = function(newFilter) {
     filter.past = newFilter;
+    saveFiltersToLocalStorage(filter);
     loadData(chart, filter);
 }
 
 window.changeRange = function(newFilter) {
     filter.range = newFilter;
+    saveFiltersToLocalStorage(filter);
     loadData(chart, filter);
 }
