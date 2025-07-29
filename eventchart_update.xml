@@ -4,17 +4,17 @@
     <description>Module to display a line chart of event bookings.</description>
     <element>mod_eventchart</element>
     <type>module</type>
-    <version>0.0.20</version>
+    <version>0.0.21</version>
     <infourl title="Event Chart releases">https://github.com/franshst/Event-chart/releases</infourl>
     <downloads>
       <downloadurl type="full" format="zip">
-                https://github.com/franshst/Event-chart/releases/download/V0.0.20/mod_eventchart.zip
+                https://github.com/franshst/Event-chart/releases/download/V0.0.21/mod_eventchart.zip
             </downloadurl>
     </downloads>
     <maintainer>Frans Stuurman</maintainer>
     <maintainerurl>https://github.com/franshst</maintainerurl>
     <targetplatform name="joomla" version="4|5" />
     <client>site</client>
-    <sha256>574F0C4BADF73E51881379B45EE61005C4D61F6CFA6659C719C9FAC677E23206</sha256>
+    <sha256>2325b0fab913162f5ec9bd64afe83926a0a2a5fa73cc9ef4e5eefa5d9c9d635f</sha256>
   </update>
 </updates>
