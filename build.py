@@ -47,58 +47,34 @@ def copy_and_update_version(source, destination):
         version_tag = ET.SubElement(root, "version")
     version_tag.text = version
     tree.write(destination)
+    print(f"✔ Version updated in {destination}")
 
-def copy_update_and_add_checksum(zip_file):
-    shutil.copy(source_update_xml, target_update_xml)
-    tree = ET.parse(target_update_xml)
-    root = tree.getroot()
-    version_tag = root.find("version")
-    if version_tag is None:
-        version_tag = ET.SubElement(root, "version")
-    version_tag.text = version
+def prepare_update_xml():
+    print("Preparing update XML...")
+    with open(source_update_xml, "r", encoding="utf-8") as f:
+        content = f.read()
 
+    content = content.replace("{VERSION}", version)
+
+    with open(target_update_xml, "w", encoding="utf-8") as f:
+        f.write(content)
+
+    print("✔ eventchart_update.xml prepared with version:", version)
+
+def update_checksum(zip_file):
+    print("Updating checksum in eventchart_update.xml...")
     sha256 = hashlib.sha256()
     with open(zip_file, "rb") as f:
         for block in iter(lambda: f.read(4096), b""):
             sha256.update(block)
     checksum = sha256.hexdigest()
 
+    tree = ET.parse(target_update_xml)
+    root = tree.getroot()
+
     update_node = root.find("update")
-    sha256_node = update_node.find("sha256") if update_node is not None else None
-    if sha256_node is not None:
-        sha256_node.text = checksum
-    elif update_node is not None:
-        ET.SubElement(update_node, "sha256").text = checksum
+    if update_node is None:
+        update_node = ET.SubElement(root, "update")
 
-    tree.write(target_update_xml)
-
-def create_zip():
-    print("Creating ZIP archive...")
-    if os.path.exists(zip_name):
-        os.remove(zip_name)
-    if os.path.exists(temp_folder):
-        shutil.rmtree(temp_folder)
-
-    os.makedirs(temp_folder)
-
-    # Copy required folders
-    for folder in ["tmpl", "language", "Helper", "js"]:
-        shutil.copytree(folder, os.path.join(temp_folder, folder))
-
-    # Copy necessary files
-    shutil.copy("LICENSE", temp_folder)
-    shutil.copy(target_mod_xml, os.path.join(temp_folder, "mod_eventchart.xml"))
-    for file in os.listdir("."):
-        if file.endswith(".php"):
-            shutil.copy(file, temp_folder)
-
-    shutil.make_archive(zip_name.replace(".zip", ""), 'zip', temp_folder)
-    shutil.rmtree(temp_folder)
-    print(f"✅ ZIP file created: {zip_name}")
-
-if __name__ == "__main__":
-    minify_js()
-    copy_and_update_version(source_mod_xml, target_mod_xml)
-    create_zip()
-    copy_update_and_add_checksum(zip_name)
-    print(f"\nDone!\n  - Created: {zip_name}\n  - Updated: {target_mod_xml}, {target_update_xml}")
+    sha256_node = update_node.find("sha256")
+    if sha256_node is not None:_
