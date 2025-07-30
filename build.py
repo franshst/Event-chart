@@ -12,7 +12,7 @@ if not version:
     exit(1)
 
 # Configuration
-zip_name = f"mod_eventchart_v{version}.zip"
+zip_name = f"mod_eventchart.zip"
 temp_folder = "mod_eventchart_temp"
 
 source_mod_xml = os.path.join("update", "mod_eventchart.xml")
