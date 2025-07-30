@@ -24,11 +24,13 @@ jobs:
         python build.py ${{ github.event.inputs.version }}
         echo "ZIP_NAME=mod_eventchart_v${{ github.event.inputs.version }}.zip" >> $GITHUB_ENV
 
-    - name: Create GitHub Release
+    - name: Create GitHub Pre-Release
       uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ github.event.inputs.version }}
         name: v${{ github.event.inputs.version }}
+        prerelease: true   # ✅ Mark release as a pre-release
+        generate_release_notes: true  # ✅ Auto-fill release notes (you can edit them)
         files: |
           ${{ env.ZIP_NAME }}
           eventchart_update.xml
