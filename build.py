@@ -114,4 +114,11 @@ def create_zip():
 
 if __name__ == "__main__":
     minify_js()
-    copy_and_u
+    copy_and_update_mod_xml()
+    create_zip()
+    prepare_update_xml()
+    update_checksum(zip_name)
+
+    print("\n🎉 Build complete!")
+    print(f"  - ZIP: {zip_name}")
+    print(f"  - Update XML: {target_update_xml}")
