@@ -1,0 +1,36 @@
+name: Joomla Extension Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g. 1.2.3)"
+        required: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Build and Package
+      run: |
+        python build.py ${{ github.event.inputs.version }}
+        echo "ZIP_NAME=mod_eventchart_v${{ github.event.inputs.version }}.zip" >> $GITHUB_ENV
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ github.event.inputs.version }}
+        name: v${{ github.event.inputs.version }}
+        files: |
+          ${{ env.ZIP_NAME }}
+          eventchart_update.xml
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
