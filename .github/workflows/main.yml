@@ -25,7 +25,7 @@ jobs:
     - name: Build and Package
       run: |
         python build.py ${{ github.event.inputs.version }}
-        echo "ZIP_NAME=mod_eventchart_v${{ github.event.inputs.version }}.zip" >> $GITHUB_ENV
+        echo "ZIP_NAME=mod_eventchart.zip" >> $GITHUB_ENV
 
     - name: Create GitHub Pre-Release
       uses: softprops/action-gh-release@v2
