@@ -33,6 +33,12 @@ use Joomla\CMS\Language\Text;
         width: 100%;
         height: 100%;
     }
+    @media (max-width: 576px) {
+        /* phones: the auto-height parent collapses, so guarantee usable chart height */
+        .fsec-chart {
+            min-height: 450px;
+        }
+    }
 </style>
 
 <div id="fsECFilters" class="container">
