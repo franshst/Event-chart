@@ -13,10 +13,11 @@
 // No direct access
 defined('_JEXEC') or die;
 
+use Joomla\CMS\Factory;
 use Joomla\CMS\Helper\ModuleHelper;
 use EventChartNamespace\Module\EventChart\Site\Helper\EventChartHelper;
 
-JFactory::getLanguage()->load('mod_eventchart', JPATH_SITE);
+Factory::getApplication()->getLanguage()->load('mod_eventchart', JPATH_SITE);
 $eventData = EventChartHelper::getEventData();
 $locationData = EventChartHelper::getLocationData();
 $categoryData = EventChartHelper::getCategoryData();

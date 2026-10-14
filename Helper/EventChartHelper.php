@@ -41,9 +41,9 @@ class EventChartHelper
         $eventData = array();
         foreach ($events as $row) {
             // create new event item in the array
-            if (count($eventData) == 0 || current($eventData)->eventId != $row->eventId) {
+            if (count($eventData) == 0 || $eventData[count($eventData) - 1]->eventId != $row->eventId) {
                 $cumRegistrants = 0;
-                array_push($eventData, (object)array(
+                $eventData[] = (object)[
                     'eventId' => $row->eventId,
                     'eventDate' => strtotime($row->eventDate),
                     'title'=> $row->title,
@@ -52,38 +52,32 @@ class EventChartHelper
                     'eventCapacity' => $row->eventCapacity,
                     // next initial values will be overwritten when processing registrations.
                     'cumRegistrants' => 0,
-                    'firstRegistration' => -999999,
                     'lastRegistration' => 999999,
-                    'firstRegistrationDate' => strtotime($row->registerDate),
                     'lastRegistrationDate' => strtotime($row->registerDate),
-                    'registrations' => array()
-                    )
-                );
-                end($eventData); // point to last pushed
+                    'registrations' => []
+                    ];
             }
+            $event = $eventData[count($eventData) - 1];
 
             // next lines are processed for each registration of the event
             // Calculate cumulative tickets sold for each event
             // update total number of registrations
             $cumRegistrants = $cumRegistrants + $row->numberRegistrants;
-            current($eventData)->cumRegistrants = $cumRegistrants;
+            $event->cumRegistrants = $cumRegistrants;
 
             $registerDate = strtotime($row->registerDate);
             $daysBeforeEvent = (strtotime($row->eventDate) - $registerDate) / (60 * 60 * 24); // note this is relative to event date, so higher numbers mean earlier registration
-            // calculate first and last registration
-            current($eventData)->firstRegistration = max(current($eventData)->firstRegistration,$daysBeforeEvent);
-            current($eventData)->lastRegistration = min(current($eventData)->lastRegistration,$daysBeforeEvent);
-            current($eventData)->firstRegistrationDate = min(current($eventData)->firstRegistrationDate,$registerDate);
-            current($eventData)->lastRegistrationDate = max(current($eventData)->lastRegistrationDate,$registerDate);
-            //var_dump(count($eventData)); echo('<p>');
+            // calculate last registration
+            $event->lastRegistration = min($event->lastRegistration,$daysBeforeEvent);
+            $event->lastRegistrationDate = max($event->lastRegistrationDate,$registerDate);
             // add registration
-            $registrations = (object)array(
+            $registrations = (object)[
                 'registerDate' => $registerDate,
                 'daysBeforeEvent' => $daysBeforeEvent,
                 'numberRegistrants' => $row->numberRegistrants,
-                'cumRegistrants' => $cumRegistrants);
+                'cumRegistrants' => $cumRegistrants];
 
-            array_push(current($eventData)->registrations, $registrations); // here push the sale
+            $event->registrations[] = $registrations; // here push the sale
         }
         return $eventData;
     }
@@ -149,7 +143,7 @@ class EventChartHelper
             ->select($db->quoteName(['id','name','name'],[null,null,'sort']))
             ->from($db->quoteName('#__eb_locations',''));
         $allrow = $db->getQuery(true)
-            ->select([0, "'".text::_('MOD_EVENTCHART_ALL')."'", "' '"]);
+            ->select([0, "'".Text::_('MOD_EVENTCHART_ALL')."'", "' '"]);
         $query = $query->union($allrow)->order($db->quoteName('sort'));
         $db->setQuery($query);
         $results = $db->loadObjectList();
@@ -185,15 +179,4 @@ class EventChartHelper
         return $db->loadObjectList();
     }
 
-    // Helper functions
-
-    // testing only, dump vars on html
-    private function dump($data) {
-        $out = $data;
-        if (is_array($out))
-            $out = implode(',', $out);
-        echo $out. "<br>";
-    // ec ho '<pre>' . print_r($out, true) . '</pre>';
-    }
-    
 }

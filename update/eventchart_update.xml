@@ -13,7 +13,8 @@
     </downloads>
     <maintainer>Frans Stuurman</maintainer>
     <maintainerurl>https://github.com/franshst</maintainerurl>
-    <targetplatform name="joomla" version="4|5" />
+    <targetplatform name="joomla" version="5|6" />
+    <php_minimum>8.1.0</php_minimum>
     <client>site</client>
     <sha256>2325b0fab913162f5ec9bd64afe83926a0a2a5fa73cc9ef4e5eefa5d9c9d635f</sha256>
   </update>

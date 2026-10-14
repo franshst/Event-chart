@@ -18,7 +18,7 @@
  * 
  */
 
-import {Chart, LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Legend, Tooltip} from 'https://cdn.skypack.dev/chart.js@3.9.1';
+import {Chart, LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Legend, Tooltip} from 'https://cdn.jsdelivr.net/npm/chart.js@4.5.1/+esm';
 Chart.register(LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Legend, Tooltip);
 
 // Ensure required globals are defined (for Joomla module context)
@@ -26,27 +26,19 @@ if (typeof eventData === 'undefined') window.eventData = [];
 if (typeof locationData === 'undefined') window.locationData = [];
 if (typeof categoryData === 'undefined') window.categoryData = [];
 if (typeof params === 'undefined') window.params = {};
-if (typeof Joomla === 'undefined') window.Joomla = { JText: { _: (x) => x } };
+if (typeof Joomla === 'undefined') window.Joomla = { Text: { _: (x) => x } };
 
 // constants to convert between days (registration time before start of event), x range of the chart (in weeks), and to select past events (in months)
 const weeks = 7;
 const months = 365/12;
 
-// function convertDates written by chatgpt
-// conversion of PHP datetime values to javascript datetime values
-// note: php dates are unix timestamp in seconds
-function convertDates(obj, dateFields) {
-    if (Array.isArray(obj)) {
-        obj.forEach(item => {
-            convertDates(item, dateFields);
-        });
-    } else if (typeof obj === 'object' && obj !== null) {
-        for (const key in obj) {
-            if (dateFields.includes(key)) {
-                obj[key] = new Date(obj[key] * 1000); // Assuming timestamps are in seconds
-            } else {
-                convertDates(obj[key], dateFields);
-            }
+// conversion of PHP datetime values (unix timestamps in seconds) to javascript dates
+function convertDates(events) {
+    for (const event of events) {
+        event.eventDate = new Date(event.eventDate * 1000);
+        event.lastRegistrationDate = new Date(event.lastRegistrationDate * 1000);
+        for (const sale of event.registrations) {
+            sale.registerDate = new Date(sale.registerDate * 1000);
         }
     }
 }
@@ -78,7 +70,6 @@ function matchIdCategory(eventCategoryId, categoryIdFilter) {
 function filterEvent(event, filter){
     // include events in this date range
     let fromDate = new Date(); fromDate.setDate(fromDate.getDate() - filter.past*months); //past is in months
-    //toDate = new Date(); toDate.setDate(toDate.getDate() + filter.range);
     return(
         (filter.title === '' || event.title.toUpperCase().includes(filter.title.toUpperCase())) &&
         ((filter.location == 0) || (event.locationId == filter.location)) &&
@@ -111,7 +102,6 @@ function insertExtraDatapoint() {
         if (eventData[eventId].eventDate < today) { // event in the past, insert the final number of registrants
             if (eventData[eventId].eventDate > eventData[eventId].lastRegistrationDate) {
                 eventData[eventId].registrations.push({registerDate: eventData[eventId].eventDate, daysBeforeEvent: 0 ,numberRegistrants: 0, cumRegistrants: eventData[eventId].cumRegistrants});
-                // eventData[eventId].lastRegistration = 0; //do we need this? Will place a horizontal line if last sale was before the horizontal range for a past event.
             }
         } else { // event in the future, extend the line to today, to show the number of registrants as of today
             const diffDates = (eventData[eventId].eventDate - today)/(1000 * 60 * 60 * 24);
@@ -166,15 +156,6 @@ function loadData(chart,filter) {
     chart.update();
 }
 
-// populate a dropdown
-function addOption(selectbox, text, value, selected) {
-    let optn = document.createElement("option");
-    optn.text = text;
-    optn.value = value;
-    optn.selected = selected;
-    selectbox.options.add(optn);
-}
-
 // store filters in local storage
 // so that the user can return to the same filters next time
 function saveFiltersToLocalStorage(filter) {
@@ -182,7 +163,7 @@ function saveFiltersToLocalStorage(filter) {
 }
 
 // convert PHP data to javascript data
-convertDates(eventData,['eventDate','registerDate','firstRegistrationDate','lastRegistrationDate']);
+convertDates(eventData);
 
 // extend graph to event date or today
 insertExtraDatapoint();
@@ -222,19 +203,16 @@ saveFiltersToLocalStorage(filter);
 
     let locationDropdown = document.getElementById("fsECloc");
     for (let l of locationData){
-        addOption(locationDropdown,l.name,l.id,l.id == filter.location)
+        locationDropdown.options.add(new Option(l.name, l.id, false, l.id == filter.location))
     }
 
     let categoryDropdown = document.getElementById("fsECcat");
     for (let c of categoryData) {
-        addOption(categoryDropdown,c.name,c.id,c.id == filter.category)
+        categoryDropdown.options.add(new Option(c.name, c.id, false, c.id == filter.category))
     }
 
     document.getElementById("fsECrange").value = filter.range;
     document.getElementById("fsECpast").value = filter.past;
-
-// create empty dataset
-//var datasets = [];
 
 // create chart
 let ctx = document.getElementById('fsECchart').getContext('2d');
@@ -279,7 +257,7 @@ let chart = new Chart(ctx, {
                 },
                 title: {
                     display: true,
-                    text: Joomla.JText._('MOD_EVENTCHART_X_LABEL')
+                    text: Joomla.Text._('MOD_EVENTCHART_X_LABEL')
                 }
             },
             y: {
@@ -287,7 +265,7 @@ let chart = new Chart(ctx, {
                 position: 'left',
                 title: {
                     display: true,
-                    text: Joomla.JText._('MOD_EVENTCHART_Y_LABEL')
+                    text: Joomla.Text._('MOD_EVENTCHART_Y_LABEL')
                 }
             }
         },
@@ -339,8 +317,8 @@ let chart = new Chart(ctx, {
                                 ? navigator.languages[0]
                                 : navigator.language;
                         let dateDisplay = date.toLocaleDateString(userLocale,options) + ' ' + date.toLocaleDateString(userLocale);
-                        let xDisplay = Math.floor(xValue * 7) + ' ' + Joomla.JText._('MOD_EVENTCHART_TOOLTIP_DAYS_BEFORE');
-                        let yDisplay = yValue + ' ' + Joomla.JText._('MOD_EVENTCHART_TOOLTIP_REGISTRATIONS');
+                        let xDisplay = Math.floor(xValue * 7) + ' ' + Joomla.Text._('MOD_EVENTCHART_TOOLTIP_DAYS_BEFORE');
+                        let yDisplay = yValue + ' ' + Joomla.Text._('MOD_EVENTCHART_TOOLTIP_REGISTRATIONS');
 
 
                         return [dateDisplay,xDisplay,yDisplay];
@@ -354,33 +332,9 @@ let chart = new Chart(ctx, {
 // fill dataset and display
 loadData(chart,filter);
 
-// callback functions from the HTML filter fields/dropdowns
-window.changeTitle = function(newFilter) {
-    filter.title = newFilter;
-    saveFiltersToLocalStorage(filter);
-    loadData(chart, filter);
-}
-
-window.changeLocation = function(newFilter) {
-    filter.location = newFilter;
-    saveFiltersToLocalStorage(filter);
-    loadData(chart, filter);
-}
-
-window.changeCategory = function(newFilter) {
-    filter.category = newFilter;
-    saveFiltersToLocalStorage(filter);
-    loadData(chart, filter);
-}
-
-window.changePast = function(newFilter) {
-    filter.past = newFilter;
-    saveFiltersToLocalStorage(filter);
-    loadData(chart, filter);
-}
-
-window.changeRange = function(newFilter) {
-    filter.range = newFilter;
+// callback function for the HTML filter fields/dropdowns
+window.changeFilter = function(key, newFilter) {
+    filter[key] = newFilter;
     saveFiltersToLocalStorage(filter);
     loadData(chart, filter);
 }
