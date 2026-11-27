@@ -13,8 +13,12 @@ Remarks on use or bugs can be placed in the github issues, no guaranty I can wor
 
 Building:
 Needs Python 3 and uglify-js (`npm install -g uglify-js`). The build fails if uglify-js is missing.
-Run `python3 build.py <version>` (e.g. `python3 build.py 0.1.4`). It minifies js/mod_eventchart.js and creates mod_eventchart.zip, mod_eventchart.xml and eventchart_update.xml in the repository root.
+Run `python3 build.py <version>` (e.g. `python3 build.py 0.1.4`). It minifies js/mod_eventchart.js and creates mod_eventchart.zip,
+mod_eventchart.xml and eventchart_update.xml in the repository root.
 
 Deploying:
-Commit your changes first, then authenticate the GitHub CLI (`gh auth login`).
-Run `./deploy.sh <version>` (e.g. `./deploy.sh 0.1.4`; a leading `v` is optional). It calls build.py, takes the release notes from the commit messages since the latest GitHub release, creates and pushes tag `v<version>`, and publishes mod_eventchart.zip and eventchart_update.xml as a prerelease.
+Commit your changes first. Run `./deploy.sh <version>` (e.g. `./deploy.sh 0.1.4`; a leading `v` is optional).
+It creates and pushes tag `v<version>`. The GitHub workflow then builds the package,
+takes the release notes from the commit messages since the latest release,
+and publishes mod_eventchart.zip and eventchart_update.xml as a prerelease.
+Do not create the tag manually as well: the workflow owns the release.

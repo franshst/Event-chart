@@ -18,10 +18,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: '3.x'
 
@@ -32,10 +34,26 @@ jobs:
       run: |
         VERSION="${{ github.event.inputs.version }}"
         [ -z "$VERSION" ] && VERSION="${GITHUB_REF_NAME#v}"
+        VERSION="${VERSION#v}"
         python build.py "$VERSION"
-        echo "ZIP_NAME=mod_eventchart.zip" >> $GITHUB_ENV
+        echo "TAG=v${VERSION}" >> $GITHUB_ENV
+
+    - name: Release notes
+      run: |
+        LAST=$(gh release list --limit 2 --json tagName --jq '.[0].tagName' || true)
+        if [ "$LAST" = "$TAG" ]; then
+          LAST=$(gh release list --limit 2 --json tagName --jq '.[1].tagName' || true)
+        fi
+        git fetch --tags --quiet
+        if [ -n "$LAST" ]; then
+          git log "$LAST..HEAD" --pretty=format:'- %s' > release-notes.md
+        else
+          git log HEAD --pretty=format:'- %s' > release-notes.md
+        fi
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Create GitHub Pre-Release
-      run: gh release create "${GITHUB_REF_NAME:-v${{ github.event.inputs.version }}}" --prerelease --generate-notes "${{ env.ZIP_NAME }}" eventchart_update.xml
+      run: gh release create "$TAG" --title "$TAG" --prerelease --notes-file release-notes.md mod_eventchart.zip eventchart_update.xml
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

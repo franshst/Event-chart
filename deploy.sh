@@ -20,16 +20,6 @@ if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
     exit 1
 fi
 
-python3 build.py "$VERSION"
-
-LAST=$(gh release list --limit 1 --json tagName --jq '.[0].tagName')
-if [ -n "$LAST" ]; then
-    NOTES=$(git log "$LAST..HEAD" --pretty=format:'- %s')
-else
-    NOTES=$(git log HEAD --pretty=format:'- %s')
-fi
-
 git tag "$TAG"
 git push origin "$TAG"
-
-gh release create "$TAG" --title "$TAG" --notes "$NOTES" --prerelease mod_eventchart.zip eventchart_update.xml
+echo "Pushed $TAG; the GitHub workflow builds and publishes the release."
