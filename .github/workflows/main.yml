@@ -25,6 +25,9 @@ jobs:
       with:
         python-version: '3.x'
 
+    - name: Install uglify-js
+      run: npm install -g uglify-js
+
     - name: Build and Package
       run: |
         VERSION="${{ github.event.inputs.version }}"

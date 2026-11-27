@@ -24,6 +24,9 @@ target_update_xml = "eventchart_update.xml"
 def minify_js():
     js_path = "js"
     print("🔧 Minifying JavaScript files...")
+    if shutil.which("uglifyjs") is None:
+        raise SystemExit("uglifyjs not found - install it with 'npm install -g uglify-js'")
+
     for filename in os.listdir(js_path):
         if filename.endswith(".min.js"):
             os.remove(os.path.join(js_path, filename))
@@ -32,12 +35,8 @@ def minify_js():
         if filename.endswith(".js") and not filename.endswith(".min.js"):
             input_file = os.path.join(js_path, filename)
             output_file = os.path.join(js_path, filename.replace(".js", ".min.js"))
-            try:
-                subprocess.run(["uglifyjs", input_file, "-o", output_file], check=True)
-                print(f"✔ Minified {filename}")
-            except Exception as e:
-                print(f"❌ Error minifying {filename}: {e}")
-                return
+            subprocess.run(["uglifyjs", input_file, "-o", output_file], check=True)
+            print(f"✔ Minified {filename}")
 
 def copy_and_update_mod_xml():
     print("🔧 Updating mod_eventchart.xml with version...")
