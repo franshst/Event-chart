@@ -6,6 +6,9 @@ on:
       version:
         description: "Release version (e.g. 1.2.3)"
         required: true
+  push:
+    tags:
+      - 'v*'
 
 permissions:
   contents: write  # ✅ Required to create releases and upload assets
@@ -24,10 +27,12 @@ jobs:
 
     - name: Build and Package
       run: |
-        python build.py ${{ github.event.inputs.version }}
+        VERSION="${{ github.event.inputs.version }}"
+        [ -z "$VERSION" ] && VERSION="${GITHUB_REF_NAME#v}"
+        python build.py "$VERSION"
         echo "ZIP_NAME=mod_eventchart.zip" >> $GITHUB_ENV
 
     - name: Create GitHub Pre-Release
-      run: gh release create "v${{ github.event.inputs.version }}" --prerelease --generate-notes "${{ env.ZIP_NAME }}" eventchart_update.xml
+      run: gh release create "${GITHUB_REF_NAME:-v${{ github.event.inputs.version }}}" --prerelease --generate-notes "${{ env.ZIP_NAME }}" eventchart_update.xml
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
